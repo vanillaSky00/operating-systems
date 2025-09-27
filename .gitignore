@@ -10,6 +10,7 @@
 *.swp
 *.swo
 *.DS_Store
+*.dSYM
 
 # VS Code
 .vscode/
@@ -45,6 +46,7 @@ Makefile
 # Backup files
 *~
 
-
+# if no extention binary file
+*.[!a-zA-Z0-9]*
 
 # if anything unwanted add to git just: git rm --cached graph/convex_hull/graham_scan.exe 
