@@ -69,7 +69,7 @@ int main(void) {
         }
     }
 
-    sleep(1);                    // pretend to do work
+    sleep(1);                      // pretend to do work
     //kill(B_pid, SIGTERM);        // terminate children
     //kill(C_pid, SIGTERM);
 
