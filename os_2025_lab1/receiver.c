@@ -46,15 +46,17 @@ static void mailbox_close(mailbox_t* mb) {
     }
     else if (mb->flag == SHARED_MEM) {
         shmdt(mb->storage.shm_addr);
+
+        sem_close(sem_open(SEM_EMPTY, 0));
+        sem_close(sem_open(SEM_FULL, 0));
+        
+        // Optional cleanup (remove semaphores completely)
+        sem_unlink(SEM_EMPTY);
+        sem_unlink(SEM_FULL);
     }
 }
 
 void mailbox_receive(message_t* msg, mailbox_t* mb){
-    /*  TODO: 
-        1. Use flag to determine the communication method
-        2. According to the communication method, receive the message
-    */
-    
     if (mb->flag == MSG_PASSING) {
         int qid = mb->storage.msqid;
 
@@ -65,8 +67,15 @@ void mailbox_receive(message_t* msg, mailbox_t* mb){
     }
     
     else if (mb->flag == SHARED_MEM) {
+        sem_t* sem_empty = sem_open(SEM_EMPTY, 0);
+        sem_t* sem_full = sem_open(SEM_FULL, 0);
+
+        sem_wait(sem_full);
+
         message_t *share_msg = (message_t *) mb->storage.shm_addr;
         memcpy(msg, share_msg, sizeof(message_t));
+
+        sem_post(sem_empty);
     }
 }
 
@@ -109,4 +118,4 @@ int main(int argc, char* argv[]){
 
     mailbox_close(&mb);
     return 0;
-    }
+}

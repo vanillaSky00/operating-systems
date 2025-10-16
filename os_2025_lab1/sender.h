@@ -17,8 +17,12 @@
 
 #define MSG_PASSING 1
 #define SHARED_MEM 2
+
 #define MQ_PATH "."
 #define MQ_PROJ 65
+
+#define SEM_EMPTY "/sem_empty"
+#define SEM_FULL  "/sem_full"
 
 typedef struct {
     int flag;      // 1 for message passing, 2 for shared memory

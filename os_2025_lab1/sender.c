@@ -38,6 +38,14 @@ static void mailbox_init(mailbox_t* mb, int mode) {
             perror("shmat");
             exit(EXIT_FAILURE);
         }
+
+        // create semaphores
+        sem_t* sem_empty = sem_open(SEM_EMPTY, O_CREAT, 0666, 1); 
+        sem_t* sem_full = sem_open(SEM_FULL, O_CREAT, 0666, 0);
+        if (sem_empty == SEM_FAILED || sem_full == SEM_FAILED) {
+            perror("sem_open");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -47,6 +55,8 @@ static void mailbox_close(mailbox_t *mb) {
     }
     else if (mb->flag == SHARED_MEM) {
         shmdt(mb->storage.shm_addr);
+        sem_close(sem_open(SEM_EMPTY, 0));
+        sem_close(sem_open(SEM_FULL, 0));
     }
 }
 
@@ -59,10 +69,6 @@ static message_t make_message(const char *text) {
 }
 
 void mailbox_send(const message_t* message, mailbox_t* mb){
-    /*  TODO: 
-        1. Use flag to determine the communication method
-        2. According to the communication method, mailbox_send the message
-    */
     if (mb == NULL) {
         perror("mailbox_send");
         exit(EXIT_FAILURE);
@@ -75,7 +81,16 @@ void mailbox_send(const message_t* message, mailbox_t* mb){
         }
     }
     else if (mb->flag == SHARED_MEM) {
+        sem_t* sem_empty = sem_open(SEM_EMPTY, 0); 
+        sem_t* sem_full = sem_open(SEM_FULL, 0);
+
+        // Wait until shared memory is empty
+        sem_wait(sem_empty);
+
         memcpy(mb->storage.shm_addr, message, sizeof(message_t));
+
+        // Signal receiver that message is ready
+        sem_post(sem_full);
     } 
 }
 
