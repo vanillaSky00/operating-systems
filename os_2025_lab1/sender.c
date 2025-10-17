@@ -38,26 +38,26 @@ static void mailbox_init(mailbox_t* mb, int mode) {
             perror("shmat");
             exit(EXIT_FAILURE);
         }
-
-        // create semaphores
-        sem_t* sem_empty = sem_open(SEM_EMPTY, O_CREAT, 0666, 1); 
-        sem_t* sem_full = sem_open(SEM_FULL, O_CREAT, 0666, 0);
-        if (sem_empty == SEM_FAILED || sem_full == SEM_FAILED) {
-            perror("sem_open");
-            exit(EXIT_FAILURE);
-        }
     }
+
+    // create semaphores
+    sem_t* sem_empty = sem_open(SEM_EMPTY, O_CREAT, 0666, 0); 
+    sem_t* sem_full = sem_open(SEM_FULL, O_CREAT, 0666, 0);
+    if (sem_empty == SEM_FAILED || sem_full == SEM_FAILED) {
+        perror("sem_open");
+        exit(EXIT_FAILURE);
+    }   
 }
 
 static void mailbox_close(mailbox_t *mb) {
     if (mb->flag == MSG_PASSING) {
-
+        
     }
     else if (mb->flag == SHARED_MEM) {
         shmdt(mb->storage.shm_addr);
-        sem_close(sem_open(SEM_EMPTY, 0));
-        sem_close(sem_open(SEM_FULL, 0));
     }
+    sem_close(sem_open(SEM_EMPTY, 0));
+    sem_close(sem_open(SEM_FULL, 0));
 }
 
 static message_t make_message(const char *text) {
@@ -68,29 +68,51 @@ static message_t make_message(const char *text) {
     return msg;
 }
 
+
+
+struct timespec start, end;
+double elapsed = 0.0;
+
 void mailbox_send(const message_t* message, mailbox_t* mb){
-    if (mb == NULL) {
+    sem_t* sem_empty = sem_open(SEM_EMPTY, 0); 
+    sem_t* sem_full = sem_open(SEM_FULL, 0);
+
+    if (message == NULL || mb == NULL) {
         perror("mailbox_send");
         exit(EXIT_FAILURE);
     }
 
     if (mb->flag == MSG_PASSING) {
         int qid = mb->storage.msqid;
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
         if (msgsnd(qid, message, sizeof(message->msgText), 0) == -1) {
             perror("msgsnd");
         }
-    }
-    else if (mb->flag == SHARED_MEM) {
-        sem_t* sem_empty = sem_open(SEM_EMPTY, 0); 
-        sem_t* sem_full = sem_open(SEM_FULL, 0);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        elapsed += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
+        
+        // Signal receiver that message is ready
+        sem_post(sem_full);
 
         // Wait until shared memory is empty
         sem_wait(sem_empty);
 
+    }
+    else if (mb->flag == SHARED_MEM) {
+
+        clock_gettime(CLOCK_MONOTONIC, &start);
+
         memcpy(mb->storage.shm_addr, message, sizeof(message_t));
+        
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        elapsed += (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
 
         // Signal receiver that message is ready
         sem_post(sem_full);
+
+        // Wait until shared memory is empty
+        sem_wait(sem_empty);
     } 
 }
 
@@ -108,13 +130,14 @@ int main(int argc, char* argv[]){
         exit(EXIT_FAILURE);
     }
 
-    struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC, &start);
-
     char line[MAX_LEN];
     mailbox_t mb;
     mb.flag = mode;
+
     mailbox_init(&mb, mode);
+
+    if (mode == MSG_PASSING) printf("Message Passing\n");
+    else if (mode == SHARED_MEM) printf("Shared Memory\n");
 
     while (fgets(line, sizeof(line), fp)) {
         line[strcspn(line, "\n")] = '\0';
@@ -128,8 +151,6 @@ int main(int argc, char* argv[]){
     message_t exit_msg = make_message("EOF");
     mailbox_send(&exit_msg, &mb);
     
-    clock_gettime(CLOCK_MONOTONIC, &end);
-    double elapsed = (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) * 1e-9;
     printf("Total time taken in sending msg: %.6f\n", elapsed);
 
     mailbox_close(&mb);

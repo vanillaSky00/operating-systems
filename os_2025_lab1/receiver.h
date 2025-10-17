@@ -28,6 +28,7 @@ typedef struct {
     int flag;      // 1 for message passing, 2 for shared memory
     union{
         int msqid; //for system V api. You can replace it with structure for POSIX api
+                   // or for shm_id
         char* shm_addr;
     }storage;
 } mailbox_t;
