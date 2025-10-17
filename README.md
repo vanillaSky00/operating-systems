@@ -16,3 +16,13 @@
 | (writer)  |                                          | (reader)  |
 +-----------+  <-            msgrcv                    +-----------+
 ```
+
+
+## Use Two Semaphores (classic producer–consumer pattern)
+```
+| Semaphore   | Purpose                                                | Initial Value |
+| ----------- | ------------------------------------------------------ | ------------- |
+| `sem_empty` | indicates shared memory is **empty**, sender can write | 1             |
+| `sem_full`  | indicates shared memory is **full**, receiver can read | 0             |
+```
+
