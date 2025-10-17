@@ -70,38 +70,6 @@ int shmget(key_t key, size_t size, int shmflg);
     - mode: permissions, e.g. 0666.
 - Why: Gives a file descriptor for a shared memory region both processes can map.
 
-```
-```
-
-```
-```
-
-```
-```
-
-```
-int ftruncate(int fd, off_t length);
-```
-- What: Resizes the object to the struct size you need.
-- Args: fd from shm_open, length = sizeof(mailbox_t).
-- Why: Ensures the mapping has the right length for your mailbox struct.
-
-```
-void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off);
-```
-- What: Maps the shared memory into your process’s address space.
-- Args:
-    - len: sizeof(mailbox_t),
-    - prot: PROT_READ | PROT_WRITE,
-    - flags: MAP_SHARED (changes are visible to other mappers),
-    - fd: from shm_open.
-- Why: Lets both processes read/write the same memory region.
-
-```
-int munmap(void *addr, size_t len); / int close(int fd); / int shm_unlink(const char *name);
-```
-- What: Unmap, close fd, and permanently remove the named object.
-- Why: Proper cleanup. Typically the receiver does the final shm_unlink when done.
 
 ### POSIX Named Semaphores
 ```
