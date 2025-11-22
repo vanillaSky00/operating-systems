@@ -22,21 +22,10 @@ int shell_execute(struct cmd *cmd) {
 	int status = 0;
 
 	if(temp->next == NULL) {
-		status = search_builtin(temp);
+		int idx = search_builtin(temp);
 		if (status != -1) {
-			int in = dup(STDIN_FILENO);
-			int out = dup(STDOUT_FILENO);
-			if( in == -1 | out == -1) perror("dup");
-
-			if (setup_redirection(temp) == -1) perror("setup_redirection");
-			status = execute_builtin(status, temp);
-
-			// recover shell stdin and stdout
-			if (temp->in_file)  dup2(in, 0);
-			if (temp->out_file) dup2(out, 1);
 			
-			close(in);
-			close(out);
+			status = execute_builtin_safe(idx, temp);
 		}
 		else {
 			//external command
@@ -178,7 +167,66 @@ int setup_redirection(struct cmd_node *p) {
 
 	return 0;
 }
-// ===============================================================
+
+
+/**
+ * @brief 
+ * Determine whether cmd is a built-in command
+ * @param cmd Command structure
+ * @return int 
+ * If command is built-in command return function number
+ * If command is external command return -1 
+ */
+int search_builtin(struct cmd_node *cmd) {
+	for (int i = 0; i < num_builtins(); ++i){
+		if (strcmp(cmd->args[0], builtin_str[i]) == 0){
+			return i;
+		}
+	}
+	return -1;
+}
+
+
+/**
+ * @brief Execute built-in command
+ * 
+ * @param index Choose which built-in command to execute
+ * @param cmd Command structure
+ * @return int 
+ * Return execution result status
+ */
+int execute_builtin(int index, struct cmd_node *cmd) {
+	if (index < 0 || index >= num_builtins()) {
+		perror("execute_builtin");
+		return -1;
+	}
+
+	int result = (*builtin_func[index])(cmd->args);
+	return result;
+}
+
+int execute_builtin_safe(int index, struct cmd_node *cmd) {
+	if (cmd == NULL || index < 0 || index >= num_builtins()) {
+		perror("execute_builtin");
+		return -1;
+	}
+
+	//TODO:
+	int in = dup(STDIN_FILENO);
+	int out = dup(STDOUT_FILENO);
+	if( in == -1 | out == -1) perror("dup");
+
+	if (setup_redirection(cmd) == -1) perror("setup_redirection");
+
+	if (cmd->in_file)  dup2(in, 0);
+	if (cmd->out_file) dup2(out, 1);
+			
+	close(in);
+	close(out);
+
+	int status = (*builtin_func[index])(cmd->args);
+	return status;
+}
 
 
 /**

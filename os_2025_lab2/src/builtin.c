@@ -8,42 +8,6 @@
 #include <fcntl.h>
 #include "../include/builtin.h"
 
-/**
- * @brief 
- * Determine whether cmd is a built-in command
- * @param cmd Command structure
- * @return int 
- * If command is built-in command return function number
- * If command is external command return -1 
- */
-int search_builtin(struct cmd_node *cmd) {
-	for (int i = 0; i < num_builtins(); ++i){
-		if (strcmp(cmd->args[0], builtin_str[i]) == 0){
-			return i;
-		}
-	}
-	return -1;
-}
-
-
-/**
- * @brief Execute built-in command
- * 
- * @param index Choose which built-in command to execute
- * @param cmd Command structure
- * @return int 
- * Return execution result status
- */
-int execute_builtin(int index, struct cmd_node *cmd) {
-	if (index < 0 || index >= num_builtins()) {
-		perror("execute_builtin");
-		return -1;
-	}
-
-	int result = (*builtin_func[index])(cmd->args);
-	return result;
-}
-
 
 int help(char **args) {
 	int i;
@@ -123,7 +87,7 @@ const char *builtin_str[] = {
 };
 
 
-const int (*builtin_func[]) (char **) = {
+int (* const builtin_func[]) (char **) = {
 	&help,
 	&cd,
 	&pwd,
