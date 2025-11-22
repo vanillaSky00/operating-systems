@@ -258,7 +258,7 @@ int execute_external(struct cmd_node *p) {
 			if (setup_redirection(p) == -1) {
 				_exit(1);
 			}
-			
+
 			execvp(p->args[0], p->args);
 			perror("execvp");
 			_exit(127);
@@ -335,8 +335,12 @@ int execute_pipeline(struct cmd *cmd) {
 				exit(execute_builtin(idx, curr));
 			}
 			else {
-				execute_external(curr);
-			}
+				// FIX: Don't call execute_external (it forks). 
+				// We are already in a child. Just exec.
+					execvp(curr->args[0], curr->args);
+					perror("execvp");
+					exit(127);
+				}
 			exit(-1); // Should not reach here
 		}
 		else { 
