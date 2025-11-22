@@ -17,27 +17,24 @@
  * Return the status code
  */
 int shell_execute(struct cmd *cmd) {
+	if (cmd == NULL) return 1; // keep running
 
 	struct cmd_node *temp = cmd->head;
-	int status = 0;
 
 	if(temp->next == NULL) {
 		int idx = search_builtin(temp);
-		if (status != -1) {
-			
-			status = execute_builtin_safe(idx, temp);
+		if (idx != -1) {
+			return execute_builtin_safe(idx, temp);
 		}
 		else {
 			//external command
-			status = execute_external(cmd->head);
+			return execute_external(cmd->head);
 		}
 	}
 	// There are multiple commands ( | )
 	else {
-		status = execute_pipeline(cmd);
+		return execute_pipeline(cmd);
 	}
-
-	return status;
 }
 
 
@@ -144,11 +141,12 @@ int setup_redirection(struct cmd_node *p) {
 			return -1;
 		}
 
-		if (dup2(fd, STDOUT_FILENO) == -1) {
+		if (dup2(fd, STDIN_FILENO) == -1) {
 			perror("dup2 input");
 			close(fd);
 			return -1;
 		}
+		close(fd);
 	}
 
 	if (p->out_file != NULL) {
@@ -163,6 +161,7 @@ int setup_redirection(struct cmd_node *p) {
 			close(fd);
 			return -1;
 		}
+		close(fd);
 	}
 
 	return 0;
@@ -212,19 +211,21 @@ int execute_builtin_safe(int index, struct cmd_node *cmd) {
 	}
 
 	//TODO:
-	int in = dup(STDIN_FILENO);
-	int out = dup(STDOUT_FILENO);
-	if( in == -1 | out == -1) perror("dup");
+	int saved_in = dup(STDIN_FILENO);
+	int saved_out = dup(STDOUT_FILENO);
+	if( saved_in == -1 | saved_out == -1) perror("dup");
 
 	if (setup_redirection(cmd) == -1) perror("setup_redirection");
 
-	if (cmd->in_file)  dup2(in, 0);
-	if (cmd->out_file) dup2(out, 1);
-			
-	close(in);
-	close(out);
-
 	int status = (*builtin_func[index])(cmd->args);
+
+	// always restore, regardless of whether the command succeeded or failed
+	dup2(saved_in, STDIN_FILENO);
+	dup2(saved_out, STDOUT_FILENO);
+			
+	close(saved_in);
+	close(saved_out);
+
 	return status;
 }
 
@@ -254,6 +255,10 @@ int execute_external(struct cmd_node *p) {
 			return -1;
 
 		case 0:
+			if (setup_redirection(p) == -1) {
+				_exit(1);
+			}
+			
 			execvp(p->args[0], p->args);
 			perror("execvp");
 			_exit(127);

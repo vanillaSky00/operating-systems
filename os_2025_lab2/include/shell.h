@@ -13,6 +13,7 @@ void shell_cleanup();
 // Execution Engine
 int search_builtin(struct cmd_node *cmd);
 int execute_builtin(int index, struct cmd_node *cmd);
+int execute_builtin_safe(int index, struct cmd_node *cmd);
 int execute_external(struct cmd_node *);
 int execute_pipeline(struct cmd *cmd);
 

@@ -44,6 +44,8 @@ while (curr != NULL) {
 
 // Wait for everyone ONLY after everyone has started
 while (wait(NULL) > 0);
+
+Also, your execute_builtin_safe has a Critical Logic Bug (Sequence Error). You are restoring the file descriptors before you run the command, which means the command will ignore the redirection.
 ```
 Reference:
 
