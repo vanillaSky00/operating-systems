@@ -14,6 +14,7 @@ void free_cmd(struct cmd *cmd) {
 
     while (curr != NULL) {
         next = curr->next;
+		
         // Only free the container
         if (curr->args != NULL) free(curr->args);
         free(curr);
