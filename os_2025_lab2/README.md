@@ -17,7 +17,7 @@ Shutdown()
 What is the key difference between redirection and pipe?
 A redirect is make `fd` attach to different source, eg. output to STDOUT change to a txt file
 A pipe separates two commands, also change to fd, but the output is piped as arguements to next command
-
+Open file descriptors are preserved across a call to exec
 
 Reference:
 

@@ -199,7 +199,7 @@ int setup_redirection(struct cmd_node *p) {
 int execute_external(struct cmd_node *p) {
 	if (p == NULL) {
 		fprintf(stderr, "command is null\n");
-		return 0;
+		return -1;
 	}
 
 	pid_t pid;
@@ -208,7 +208,7 @@ int execute_external(struct cmd_node *p) {
 	switch (pid = fork()) {
 		case -1:
 			perror("fork");
-			return 0;
+			return -1;
 
 		case 0:
 			execvp(p->args[0], p->args);
@@ -247,26 +247,70 @@ int execute_external(struct cmd_node *p) {
  * Return execution status 
  */
 int execute_pipeline(struct cmd *cmd) {
-	
-	struct cmd_node *temp = cmd->head;
-	int idx = 0;
+	struct cmd_node *curr = cmd->head;
+	int status = 0;
 
-	while (temp != NULL) {
-		int idx = search_builtin(temp);
-		
-		if (status >= 0) {
-			status = setup_redirection(temp);
-			execute_builtin(idx, temp);
-		}
-		else if (status > 0){
-			status = setup_redirection(temp);
-			execute_external(temp);
+	int in_fd = STDIN_FILENO; // read end of previous pipe
+	int fd[2];
+
+	while (curr != NULL) {
+
+		if (curr->next != NULL) {
+			if (pipe(fd) == -1) {
+				perror("pipe");
+				return -1;
+			}
 		}
 
-		temp = temp->next;
+		pid_t pid = fork();
+		if (pid < 0) {
+			perror("fork");
+			return -1;
+		}
+		else if (pid == 0) { 
+			
+			// connect previous pipe to STDIN (if not the first command)
+			if (in_fd != STDERR_FILENO) {
+				dup2(in_fd, STDIN_FILENO);
+				close(in_fd);
+			}
+
+			// connect current pipe to STDOUT (if not the last command)
+			if (curr->next != NULL) {
+				dup2(fd[1], STDOUT_FILENO);
+				close(fd[1]);
+				close(fd[0]);
+			}
+
+			int idx = search_builtin(curr);
+			if (idx >= 0) {
+				exit(execute_builtin(idx, curr));
+			}
+			else {
+				execute_external(curr);
+			}
+			exit(-1); // Should not reach here
+		}
+		else { 
+			// close previous pipe, we are done reading from it
+			if (in_fd != STDIN_FILENO) close(in_fd);
+
+			// set up for next loop
+			if (curr->next != NULL) {
+
+				// the read end of the current process becomes the "Input" for the next
+				in_fd == fd[0];
+
+				// parent dose not write
+				close(fd[1]);
+			}
+			
+		}
+
+		curr = curr->next;
 	}
 	
-	return 0;
+	return status;
 }
 
 
