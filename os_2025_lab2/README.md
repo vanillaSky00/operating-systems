@@ -14,6 +14,11 @@ Run_commands_loop()
 Shutdown()
 ```
 
+What is the key difference between redirection and pipe?
+A redirect is make `fd` attach to different source, eg. output to STDOUT change to a txt file
+A pipe separates two commands, also change to fd, but the output is piped as arguements to next command
+
+
 Reference:
 
 https://github.com/brenns10/lsh

@@ -29,14 +29,19 @@ int search_builtin(struct cmd_node *cmd) {
 /**
  * @brief Execute built-in command
  * 
- * @param status Choose which built-in command to execute
+ * @param index Choose which built-in command to execute
  * @param cmd Command structure
  * @return int 
- * Return execution status
+ * Return execution result status
  */
-int execute_builtin(int status, struct cmd_node *cmd) {
-	status = (*builtin_func[status])(cmd->args);
-	return status;
+int execute_builtin(int index, struct cmd_node *cmd) {
+	if (index < 0 || index >= num_builtins()) {
+		perror("execute_builtin");
+		return -1;
+	}
+
+	int result = (*builtin_func[index])(cmd->args);
+	return result;
 }
 
 
@@ -49,7 +54,7 @@ int help(char **args) {
     	printf("%d: %s\n", i, builtin_str[i]);
   	}
     printf("--------------------------------------------------\n");
-	return 1;
+	return 0;
 }
 
 
@@ -59,7 +64,7 @@ int cd(char **args) {
 	else if (chdir(args[1]) != 0) 
 		perror("cd");
 	
-	return 1;
+	return 0;
 }
 
 
@@ -71,7 +76,7 @@ int pwd(char **args) {
 	else {
         perror("pwd");
     }
-    return 1;
+    return 0;
 }
 
 
@@ -89,7 +94,7 @@ int echo(char **args) {
 	if (newline)
 		printf("\n");
 
-	return 1;
+	return 0;
 }
 
 
@@ -107,7 +112,7 @@ int record(char **args) {
 		for (int i = history_count % MAX_RECORD_NUM; i < history_count % MAX_RECORD_NUM + MAX_RECORD_NUM; ++i)
 			printf("%2d: %s\n", i - history_count % MAX_RECORD_NUM + 1, history[i % MAX_RECORD_NUM]);
 	}
-	return 1;
+	return 0;
 }
 
 

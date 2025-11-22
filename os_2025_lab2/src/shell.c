@@ -11,7 +11,7 @@
 #include "../include/shell.h"
 
 /**
- * @brief Only a single command(built-in or exeternal) is being executed 
+ * @brief Only execute a single command(built-in or external) 
  * 
  * @return int
  * Return the status code
@@ -24,10 +24,11 @@ int shell_execute(struct cmd *cmd) {
 	if(temp->next == NULL) {
 		status = search_builtin(temp);
 		if (status != -1) {
-			int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
-			if( in == -1 | out == -1)
-				perror("dup");
-			setup_redirection(temp);
+			int in = dup(STDIN_FILENO);
+			int out = dup(STDOUT_FILENO);
+			if( in == -1 | out == -1) perror("dup");
+
+			if (setup_redirection(temp) == -1) perror("setup_redirection");
 			status = execute_builtin(status, temp);
 
 			// recover shell stdin and stdout
@@ -140,7 +141,7 @@ struct cmd *shell_split_line(char *line) {
     return new_cmd;
 }
 
-// ======================= requirement 2.3 =======================
+
 /**
  * @brief 
  * Redirect command's stdin and stdout to the specified file descriptor
@@ -150,8 +151,37 @@ struct cmd *shell_split_line(char *line) {
  * @param p cmd_node structure
  * 
  */
-void setup_redirection(struct cmd_node *p) {
+int setup_redirection(struct cmd_node *p) {
 	
+	if (p->in_file != NULL) {
+		int fd = open(p->in_file, O_RDONLY);
+		if (fd == -1) { 
+			perror("open input file");
+			return -1;
+		}
+
+		if (dup2(fd, STDOUT_FILENO) == -1) {
+			perror("dup2 input");
+			close(fd);
+			return -1;
+		}
+	}
+
+	if (p->out_file != NULL) {
+		int fd = open(p->out_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (fd == -1) {
+			perror("open output file");
+			return -1;
+		}
+
+		if (dup2(fd, STDOUT_FILENO) == -1) {
+			perror("dup2 output");
+			close(fd);
+			return -1;
+		}
+	}
+
+	return 0;
 }
 // ===============================================================
 
@@ -169,7 +199,7 @@ void setup_redirection(struct cmd_node *p) {
 int execute_external(struct cmd_node *p) {
 	if (p == NULL) {
 		fprintf(stderr, "command is null\n");
-		return 1;
+		return 0;
 	}
 
 	pid_t pid;
@@ -178,7 +208,7 @@ int execute_external(struct cmd_node *p) {
 	switch (pid = fork()) {
 		case -1:
 			perror("fork");
-			return 1;
+			return 0;
 
 		case 0:
 			execvp(p->args[0], p->args);
@@ -204,7 +234,7 @@ int execute_external(struct cmd_node *p) {
 			}
 	}
 
-  	return 1;
+  	return 0;
 }
 
 
@@ -217,12 +247,31 @@ int execute_external(struct cmd_node *p) {
  * Return execution status 
  */
 int execute_pipeline(struct cmd *cmd) {
-	return 1;
+	
+	struct cmd_node *temp = cmd->head;
+	int idx = 0;
+
+	while (temp != NULL) {
+		int idx = search_builtin(temp);
+		
+		if (status >= 0) {
+			status = setup_redirection(temp);
+			execute_builtin(idx, temp);
+		}
+		else if (status > 0){
+			status = setup_redirection(temp);
+			execute_external(temp);
+		}
+
+		temp = temp->next;
+	}
+	
+	return 0;
 }
 
 
 void shell_loop() {
-	int status = 1;
+	int status = 0;
 	
 	do {
 		char* line = NULL;
@@ -239,5 +288,5 @@ void shell_loop() {
 		status = shell_execute(cmd);
 
 		shell_cleanup(line, cmd);
-	} while(status);
+	} while(!status);
 }
