@@ -19,6 +19,32 @@ A redirect is make `fd` attach to different source, eg. output to STDOUT change 
 A pipe separates two commands, also change to fd, but the output is piped as arguements to next command
 Open file descriptors are preserved across a call to exec
 
+
+but the first cmd should have output then it can pipe to second's input, will this cause problem
+Sequential / Blocking
+```
+while (curr != NULL) {
+    fork();
+    // ... setup pipes ...
+    wait(NULL); // <--- ERROR! 
+    // If you wait here, the parent stops. 
+    // Only ONE child runs at a time.
+    // The pipe will break because no one is reading the output!
+    curr = curr->next;
+}
+```
+Concurrent / Streaming
+```
+while (curr != NULL) {
+    fork();
+    // ... setup pipes ...
+    // Do NOT wait here. Keep looping to start the next process!
+    curr = curr->next;
+}
+
+// Wait for everyone ONLY after everyone has started
+while (wait(NULL) > 0);
+```
 Reference:
 
 https://github.com/brenns10/lsh
