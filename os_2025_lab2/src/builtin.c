@@ -34,7 +34,7 @@ int search_builtin(struct cmd_node *cmd) {
  * @return int 
  * Return execution status
  */
-int execute_builtin(int status,struct cmd_node *cmd) {
+int execute_builtin(int status, struct cmd_node *cmd) {
 	status = (*builtin_func[status])(cmd->args);
 	return status;
 }

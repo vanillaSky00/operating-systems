@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include "../include/command.h"
 #include "../include/builtin.h"
+#include "../include/shell.h"
 
 /**
  * @brief Only a single command(built-in or exeternal) is being executed 
@@ -27,7 +28,7 @@ int shell_execute(struct cmd *cmd) {
 			if( in == -1 | out == -1)
 				perror("dup");
 			setup_redirection(temp);
-			status = execute_builtin(temp);
+			status = execute_builtin(status, temp);
 
 			// recover shell stdin and stdout
 			if (temp->in_file)  dup2(in, 0);
@@ -38,7 +39,7 @@ int shell_execute(struct cmd *cmd) {
 		}
 		else {
 			//external command
-			status = execute_builtin(cmd->head);
+			status = execute_external(cmd->head);
 		}
 	}
 	// There are multiple commands ( | )
@@ -165,7 +166,7 @@ void setup_redirection(struct cmd_node *p) {
  * @return int 
  * Return execution status
  */
-int execute_builtin(struct cmd_node *p) {
+int execute_external(struct cmd_node *p) {
 	if (p == NULL) {
 		fprintf(stderr, "command is null\n");
 		return 1;
@@ -207,7 +208,6 @@ int execute_builtin(struct cmd_node *p) {
 }
 
 
-// ======================= requirement 2.4 =======================
 /**
  * @brief 
  * Use "pipe()" to create a communication bridge between processes

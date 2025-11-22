@@ -10,8 +10,8 @@ struct cmd *shell_split_line(char *);
 int shell_execute(struct cmd *);
 void shell_cleanup();
 
-// Ececution Engine
-int execute_builtin(struct cmd_node *);
+// Execution Engine
+int execute_external(struct cmd_node *);
 int execute_pipeline(struct cmd *cmd);
 
 // Utilities
