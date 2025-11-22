@@ -213,9 +213,12 @@ int execute_builtin_safe(int index, struct cmd_node *cmd) {
 	//TODO:
 	int saved_in = dup(STDIN_FILENO);
 	int saved_out = dup(STDOUT_FILENO);
-	if( saved_in == -1 | saved_out == -1) perror("dup");
+	if(saved_in == -1 || saved_out == -1) perror("dup");
 
-	if (setup_redirection(cmd) == -1) perror("setup_redirection");
+	if (setup_redirection(cmd) == -1) {
+		perror("setup_redirection");
+		// TODO: return -1 and restore
+	}
 
 	int status = (*builtin_func[index])(cmd->args);
 
@@ -369,7 +372,7 @@ int execute_pipeline(struct cmd *cmd) {
 
 
 void shell_loop() {
-	int status = 0;
+	int status = 1;
 	
 	do {
 		char* line = NULL;
@@ -387,5 +390,5 @@ void shell_loop() {
 
 		free(line);
 		free_cmd(cmd);
-	} while(!status);
+	} while(status);
 }
