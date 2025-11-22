@@ -8,8 +8,6 @@
 #include <fcntl.h>
 #include "../include/builtin.h"
 
-
-
 /**
  * @brief 
  * Determine whether cmd is a built-in command
@@ -18,8 +16,7 @@
  * If command is built-in command return function number
  * If command is external command return -1 
  */
-int searchBuiltInCommand(struct cmd_node *cmd)
-{
+int searchBuiltInCommand(struct cmd_node *cmd) {
 	for (int i = 0; i < num_builtins(); ++i){
 		if (strcmp(cmd->args[0], builtin_str[i]) == 0){
 			return i;
@@ -35,13 +32,12 @@ int searchBuiltInCommand(struct cmd_node *cmd)
  * @return int 
  * Return execution status
  */
-int execBuiltInCommand(int status,struct cmd_node *cmd){
+int execBuiltInCommand(int status,struct cmd_node *cmd) {
 	status = (*builtin_func[status])(cmd->args);
 	return status;
 }
 
-int help(char **args)
-{
+int help(char **args) {
 	int i;
     printf("--------------------------------------------------\n");
   	printf("My Little Shell!!\n");
@@ -53,14 +49,12 @@ int help(char **args)
 	return 1;
 }
 // ======================= requirement 2.1 =======================
-int cd(char **args)
-{
+int cd(char **args) {
 	return 1;
 }
 // ===============================================================
 
-int pwd(char **args)
-{
+int pwd(char **args) {
 	char cwd[BUF_SIZE];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
         printf("%s\n", cwd);
@@ -70,8 +64,7 @@ int pwd(char **args)
     return 1;
 }
 
-int echo(char **args)
-{
+int echo(char **args) {
 	bool newline = true;
 	for (int i = 1; args[i]; ++i) {
 		if (i == 1 && strcmp(args[i], "-n") == 0) {
@@ -88,13 +81,11 @@ int echo(char **args)
 	return 1;
 }
 
-int exit_shell(char **args)
-{
+int exit_shell(char **args) {
 	return 0;
 }
 
-int record(char **args)
-{
+int record(char **args) {
 	if (history_count < MAX_RECORD_NUM) {
 		for (int i = 0; i < history_count; ++i)
 			printf("%2d: %s\n", i + 1, history[i]);

@@ -4,14 +4,54 @@
 #include <string.h>
 #include "../include/command.h"
 
+
+char *shell_execute(struct cmd* cmd) {
+		// // only a single command
+		// struct cmd_node *temp = cmd->head;
+		
+		// if(temp->next == NULL){
+		// 	status = searchBuiltInCommand(temp);
+		// 	if (status != -1){
+		// 		int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
+		// 		if( in == -1 | out == -1)
+		// 			perror("dup");
+		// 		redirection(temp);
+		// 		status = execBuiltInCommand(status,temp);
+
+		// 		// recover shell stdin and stdout
+		// 		if (temp->in_file)  dup2(in, 0);
+		// 		if (temp->out_file){
+		// 			dup2(out, 1);
+		// 		}
+		// 		close(in);
+		// 		close(out);
+		// 	}
+		// 	else{
+		// 		//external command
+		// 		status = spawn_proc(cmd->head);
+		// 	}
+		// }
+		// // There are multiple commands ( | )
+		// else{
+			
+		// 	status = fork_cmd_node(cmd);
+		// }
+		// free space
+}
+
+void shell_cleanup() {
+
+}
+
+
 /**
  * @brief Read the user's input string
  * 
  * @return char* 
  * Return string
  */
-char *read_line()
-{
+char *shell_read_line() {
+	// TODO: reallocate if execeed
     char *buffer = (char *)malloc(BUF_SIZE * sizeof(char));
     if (buffer == NULL) {
         perror("Unable to allocate buffer");
@@ -33,6 +73,7 @@ char *read_line()
 	return buffer;
 }
 
+
 /**
  * @brief Parse the user's command
  * 
@@ -40,8 +81,7 @@ char *read_line()
  * @return struct cmd* 
  * Return the parsed cmd structure
  */
-struct cmd *split_line(char *line)
-{
+struct cmd *shell_split_line(char *line) {
 	int args_length = 10;
     struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
     new_cmd->head = (struct cmd_node *)malloc(sizeof(struct cmd_node));
@@ -85,13 +125,14 @@ struct cmd *split_line(char *line)
 
     return new_cmd;
 }
+
+
 /**
  * @brief Information used to test the cmd structure
  * 
  * @param cmd Command structure
  */
-void test_cmd_struct(struct cmd *cmd)
-{
+void test_cmd_struct(struct cmd *cmd) {
 	struct cmd_node *temp = cmd->head;
 	int pipe_count = 0;
 	printf("============ COMMAND INFO ============\n");
@@ -107,12 +148,13 @@ void test_cmd_struct(struct cmd *cmd)
 	printf("============ COMMAND INFO END ============\n");
 }
 
+
 /**
  * @brief Information used to test the cmd_node structure
  * 
  * @param temp cmd_node structure
  */
-void test_pipe_struct(struct cmd_node *temp){
+void test_pipe_struct(struct cmd_node *temp) {
 	printf("============ CMD_NODE INFO ============\n");
 	
 	for (int i = 0; i < temp->length; ++i) {

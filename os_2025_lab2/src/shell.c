@@ -19,7 +19,7 @@
  * @param p cmd_node structure
  * 
  */
-void redirection(struct cmd_node *p){
+void redirection(struct cmd_node *p) {
 	
 }
 // ===============================================================
@@ -35,8 +35,7 @@ void redirection(struct cmd_node *p){
  * @return int 
  * Return execution status
  */
-int spawn_proc(struct cmd_node *p)
-{
+int spawn_proc(struct cmd_node *p) {
   	return 1;
 }
 // ===============================================================
@@ -51,66 +50,28 @@ int spawn_proc(struct cmd_node *p)
  * @return int
  * Return execution status 
  */
-int fork_cmd_node(struct cmd *cmd)
-{
+int fork_cmd_node(struct cmd *cmd) {
 	return 1;
 }
-// ===============================================================
 
 
-void shell()
-{
-	while (1) {
+void shell_loop() {
+	int status = 1;
+	
+	do {
+		char* line = NULL;
+		struct cmd* cmd = NULL;
+		
 		printf(">>> $ ");
-		char *buffer = read_line();
-		if (buffer == NULL)
+
+		line = shell_read_line();
+		if (line == NULL)
 			continue;
 
-		struct cmd *cmd = split_line(buffer);
+		cmd = shell_split_line(line);
 		
-		int status = -1;
-		// only a single command
-		struct cmd_node *temp = cmd->head;
-		
-		if(temp->next == NULL){
-			status = searchBuiltInCommand(temp);
-			if (status != -1){
-				int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
-				if( in == -1 | out == -1)
-					perror("dup");
-				redirection(temp);
-				status = execBuiltInCommand(status,temp);
+		status = shell_execute(cmd);
 
-				// recover shell stdin and stdout
-				if (temp->in_file)  dup2(in, 0);
-				if (temp->out_file){
-					dup2(out, 1);
-				}
-				close(in);
-				close(out);
-			}
-			else{
-				//external command
-				status = spawn_proc(cmd->head);
-			}
-		}
-		// There are multiple commands ( | )
-		else{
-			
-			status = fork_cmd_node(cmd);
-		}
-		// free space
-		while (cmd->head) {
-			
-			struct cmd_node *temp = cmd->head;
-      		cmd->head = cmd->head->next;
-			free(temp->args);
-   	    	free(temp);
-   		}
-		free(cmd);
-		free(buffer);
-		
-		if (status == 0)
-			break;
-	}
+		shell_cleanup(line, cmd);
+	} while(status);
 }
