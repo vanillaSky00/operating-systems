@@ -2,41 +2,47 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <unistd.h>
 #include "../include/command.h"
 
+/**
+ * @brief Only a single command(built-in or exeternal) is being executed 
+ * 
+ * @return int
+ * Return the status code
+ */
+int shell_execute(struct cmd *cmd) {
 
-char *shell_execute(struct cmd* cmd) {
-		// // only a single command
-		// struct cmd_node *temp = cmd->head;
-		
-		// if(temp->next == NULL){
-		// 	status = searchBuiltInCommand(temp);
-		// 	if (status != -1){
-		// 		int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
-		// 		if( in == -1 | out == -1)
-		// 			perror("dup");
-		// 		redirection(temp);
-		// 		status = execBuiltInCommand(status,temp);
+	struct cmd_node *temp = cmd->head;
+	int status = 0;
 
-		// 		// recover shell stdin and stdout
-		// 		if (temp->in_file)  dup2(in, 0);
-		// 		if (temp->out_file){
-		// 			dup2(out, 1);
-		// 		}
-		// 		close(in);
-		// 		close(out);
-		// 	}
-		// 	else{
-		// 		//external command
-		// 		status = spawn_proc(cmd->head);
-		// 	}
-		// }
-		// // There are multiple commands ( | )
-		// else{
+	if(temp->next == NULL) {
+		status = searchBuiltInCommand(temp);
+		if (status != -1) {
+			int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
+			if( in == -1 | out == -1)
+				perror("dup");
+			redirection(temp);
+			status = execBuiltInCommand(status, temp);
+
+			// recover shell stdin and stdout
+			if (temp->in_file)  dup2(in, 0);
+			if (temp->out_file) dup2(out, 1);
 			
-		// 	status = fork_cmd_node(cmd);
-		// }
-		// free space
+			close(in);
+			close(out);
+		}
+		else {
+			//external command
+			status = spawn_proc(cmd->head);
+		}
+	}
+	// There are multiple commands ( | )
+	else {
+		status = fork_cmd_node(cmd);
+	}
+
+	return status;
 }
 
 void shell_cleanup() {
@@ -86,6 +92,7 @@ struct cmd *shell_split_line(char *line) {
     struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
     new_cmd->head = (struct cmd_node *)malloc(sizeof(struct cmd_node));
     new_cmd->head->args = (char **)malloc(args_length * sizeof(char *));
+
 	for (int i = 0; i < args_length; ++i)
 		new_cmd->head->args[i] = NULL;
     new_cmd->head->length = 0;
@@ -97,6 +104,7 @@ struct cmd *shell_split_line(char *line) {
 	temp->out_file 	= NULL;
 	temp->in       	= 0;
 	temp->out 		= 1;
+
     char *token = strtok(line, " ");
     while (token != NULL) {
         if (token[0] == '|') {
