@@ -7,7 +7,22 @@
 
 
 void free_cmd(struct cmd *cmd) {
+	struct cmd_node *curr = cmd->head;
+	struct cmd_node *next;
 
+	while (curr != NULL) {
+		next = curr->next;
+
+		free(curr->in_file);
+		free(curr->out_file);
+		for (int i = 0; i < curr->length; i++) {
+			free(curr->args[i]);
+		}
+		free(curr->args);
+		free(curr);
+		
+		curr = next;
+	}
 }
 
 /**

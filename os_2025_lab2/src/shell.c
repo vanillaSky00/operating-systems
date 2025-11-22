@@ -270,7 +270,7 @@ int execute_pipeline(struct cmd *cmd) {
 		else if (pid == 0) { 
 			
 			// connect previous pipe to STDIN (if not the first command)
-			if (in_fd != STDERR_FILENO) {
+			if (in_fd != STDIN_FILENO) {
 				dup2(in_fd, STDIN_FILENO);
 				close(in_fd);
 			}
@@ -299,7 +299,7 @@ int execute_pipeline(struct cmd *cmd) {
 			if (curr->next != NULL) {
 
 				// the read end of the current process becomes the "Input" for the next
-				in_fd == fd[0];
+				in_fd = fd[0];
 
 				// parent dose not write
 				close(fd[1]);
@@ -309,6 +309,8 @@ int execute_pipeline(struct cmd *cmd) {
 
 		curr = curr->next;
 	}
+	
+	while (wait(NULL) > 0); // wait all children
 	
 	return status;
 }
@@ -331,6 +333,7 @@ void shell_loop() {
 		
 		status = shell_execute(cmd);
 
-		shell_cleanup(line, cmd);
+		free(line);
+		free_cmd(cmd);
 	} while(!status);
 }

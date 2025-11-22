@@ -15,7 +15,7 @@ int execute_external(struct cmd_node *);
 int execute_pipeline(struct cmd *cmd);
 
 // Utilities
-void setup_redirection(struct cmd_node *cmd);
+int setup_redirection(struct cmd_node *cmd);
 
 
 #endif
