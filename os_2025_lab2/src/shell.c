@@ -9,6 +9,136 @@
 #include "../include/command.h"
 #include "../include/builtin.h"
 
+/**
+ * @brief Only a single command(built-in or exeternal) is being executed 
+ * 
+ * @return int
+ * Return the status code
+ */
+int shell_execute(struct cmd *cmd) {
+
+	struct cmd_node *temp = cmd->head;
+	int status = 0;
+
+	if(temp->next == NULL) {
+		status = search_builtin(temp);
+		if (status != -1) {
+			int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
+			if( in == -1 | out == -1)
+				perror("dup");
+			setup_redirection(temp);
+			status = execute_builtin(temp);
+
+			// recover shell stdin and stdout
+			if (temp->in_file)  dup2(in, 0);
+			if (temp->out_file) dup2(out, 1);
+			
+			close(in);
+			close(out);
+		}
+		else {
+			//external command
+			status = execute_builtin(cmd->head);
+		}
+	}
+	// There are multiple commands ( | )
+	else {
+		status = execute_pipeline(cmd);
+	}
+
+	return status;
+}
+
+
+void shell_cleanup() {
+
+}
+
+
+/**
+ * @brief Read the user's input string
+ * 
+ * @return char* 
+ * Return string
+ */
+char *shell_read_line() {
+	// TODO: reallocate if execeed
+    char *buffer = (char *)malloc(BUF_SIZE * sizeof(char));
+    if (buffer == NULL) {
+        perror("Unable to allocate buffer");
+        exit(1);
+    }
+
+	if (fgets(buffer, BUF_SIZE, stdin) != NULL) {
+		if (buffer[0] == '\n' || buffer[0] == ' ' || buffer[0] == '\t') {
+			free(buffer);
+			buffer = NULL;
+		} 
+		else {
+			buffer[strcspn(buffer, "\n")] = 0;
+			strncpy(history[history_count % MAX_RECORD_NUM], buffer, BUF_SIZE);
+			++history_count;
+		}
+	}
+
+	return buffer;
+}
+
+
+/**
+ * @brief Parse the user's command
+ * 
+ * @param line User input command
+ * @return struct cmd* 
+ * Return the parsed cmd structure
+ */
+struct cmd *shell_split_line(char *line) {
+	int args_length = 10;
+    struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
+    new_cmd->head = (struct cmd_node *)malloc(sizeof(struct cmd_node));
+    new_cmd->head->args = (char **)malloc(args_length * sizeof(char *));
+
+	for (int i = 0; i < args_length; ++i)
+		new_cmd->head->args[i] = NULL;
+    new_cmd->head->length = 0;
+    new_cmd->head->next = NULL;
+	new_cmd->pipe_num = 0;
+
+	struct cmd_node *temp = new_cmd->head;
+	temp->in_file 	= NULL;
+	temp->out_file 	= NULL;
+	temp->in       	= 0;
+	temp->out 		= 1;
+
+    char *token = strtok(line, " ");
+    while (token != NULL) {
+        if (token[0] == '|') {
+            struct cmd_node *new_pipe = (struct cmd_node *)malloc(sizeof(struct cmd_node));
+			new_pipe->args = (char **)malloc(args_length * sizeof(char *));
+			for (int i = 0; i < args_length; ++i)
+				new_pipe->args[i] = NULL;
+			new_pipe->length = 0;
+			new_pipe->next = NULL;
+			temp->next = new_pipe;
+			temp = new_pipe;
+        } else if (token[0] == '<') {
+			token = strtok(NULL, " ");
+            temp->in_file = token;
+        } else if (token[0] == '>') {
+			token = strtok(NULL, " ");
+            temp->out_file = token;
+        } else {
+			temp->args[temp->length] = token;
+			temp->length++;
+        }
+        token = strtok(NULL, " ");
+		new_cmd->pipe_num++;
+
+    }
+
+    return new_cmd;
+}
+
 // ======================= requirement 2.3 =======================
 /**
  * @brief 
@@ -35,7 +165,7 @@ void setup_redirection(struct cmd_node *p) {
  * @return int 
  * Return execution status
  */
-int launch_cmd(struct cmd_node *p) {
+int execute_builtin(struct cmd_node *p) {
 	if (p == NULL) {
 		fprintf(stderr, "command is null\n");
 		return 1;
@@ -61,7 +191,7 @@ int launch_cmd(struct cmd_node *p) {
 			else if (WIFEXITED(status)) {
 				// child finish normally, check the exit code
 				int exit_code = WEXITSTATUS(status);
-				
+
 				if (exit_code != 0) {
 					fprintf(stderr, "Command failed with exit code: %d", exit_code);
 				}
@@ -81,7 +211,7 @@ int launch_cmd(struct cmd_node *p) {
 /**
  * @brief 
  * Use "pipe()" to create a communication bridge between processes
- * Call "launch_cmd()" in order according to the number of cmd_node
+ * Call "execute_builtin()" in order according to the number of cmd_node
  * @param cmd Command structure  
  * @return int
  * Return execution status 

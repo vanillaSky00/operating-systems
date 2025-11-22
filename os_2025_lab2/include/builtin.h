@@ -3,8 +3,8 @@
 #include "../include/command.h"
 
 
-int searchBuiltInCommand(struct cmd_node *cmd);
-int execBuiltInCommand(int status, struct cmd_node *cmd);
+int search_builtin(struct cmd_node *cmd);
+int execute_builtin(int status, struct cmd_node *cmd);
 
 int pwd(char **args);
 int help(char **args);

@@ -9,8 +9,10 @@
 struct cmd_node {
 	char **args;
 	int length;
-	char *in_file, *out_file;
-	int in,out;
+	char *in_file; 
+	char *out_file;
+	int in;
+	int out;
 	struct cmd_node *next;
 };
 
@@ -22,10 +24,7 @@ struct cmd {
 extern char *history[MAX_RECORD_NUM];
 extern int history_count;
 
-int shell_execute(struct cmd *);
-void shell_cleanup();
-char *shell_read_line();
-struct cmd *shell_split_line(char *);
+void free_cmd(struct cmd *cmd);
 void test_cmd_struct(struct cmd *);
 void test_pipe_struct(struct cmd_node *pipe);
 

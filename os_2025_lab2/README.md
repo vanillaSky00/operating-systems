@@ -1,3 +1,9 @@
+command.h (The Model): Only defines data structures and functions that manipulate those structures (create, free, print).
+
+builtin.h (The Module): Only defines the built-in command functions.
+
+shell.h (The Controller): Defines the main lifecycle (Loop, Read, Parse, Execute) and the process management.
+
 
 Overall 
 ```
