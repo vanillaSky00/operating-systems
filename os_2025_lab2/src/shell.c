@@ -52,11 +52,6 @@ int shell_execute(struct cmd *cmd) {
 }
 
 
-void shell_cleanup() {
-
-}
-
-
 /**
  * @brief Read the user's input string
  * 
@@ -311,7 +306,7 @@ int execute_pipeline(struct cmd *cmd) {
 	}
 	
 	while (wait(NULL) > 0); // wait all children
-	
+
 	return status;
 }
 
