@@ -22,7 +22,7 @@ int shell_execute(struct cmd *cmd) {
 			int in = dup(STDIN_FILENO), out = dup(STDOUT_FILENO);
 			if( in == -1 | out == -1)
 				perror("dup");
-			redirection(temp);
+			setup_redirection(temp);
 			status = execBuiltInCommand(status, temp);
 
 			// recover shell stdin and stdout
@@ -34,12 +34,12 @@ int shell_execute(struct cmd *cmd) {
 		}
 		else {
 			//external command
-			status = spawn_proc(cmd->head);
+			status = launch_cmd(cmd->head);
 		}
 	}
 	// There are multiple commands ( | )
 	else {
-		status = fork_cmd_node(cmd);
+		status = execute_pipeline(cmd);
 	}
 
 	return status;

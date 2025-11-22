@@ -3,9 +3,9 @@
 
 #include "command.h"
 
-int spawn_proc(struct cmd_node *);
-int fork_cmd_node(struct cmd *cmd);
-void redirection(struct cmd_node *cmd);
+int launch_cmd(struct cmd_node *);
+int execute_pipeline(struct cmd *cmd);
+void setup_redirection(struct cmd_node *cmd);
 void shell_loop();
 
 #endif

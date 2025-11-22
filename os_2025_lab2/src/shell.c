@@ -19,12 +19,12 @@
  * @param p cmd_node structure
  * 
  */
-void redirection(struct cmd_node *p) {
+void setup_redirection(struct cmd_node *p) {
 	
 }
 // ===============================================================
 
-// ======================= requirement 2.2 =======================
+
 /**
  * @brief 
  * Execute external command
@@ -35,22 +35,58 @@ void redirection(struct cmd_node *p) {
  * @return int 
  * Return execution status
  */
-int spawn_proc(struct cmd_node *p) {
+int launch_cmd(struct cmd_node *p) {
+	if (p == NULL) {
+		fprintf(stderr, "command is null\n");
+		return 1;
+	}
+
+	pid_t pid;
+	int status;
+
+	switch (pid = fork()) {
+		case -1:
+			perror("fork");
+			return 1;
+
+		case 0:
+			execvp(p->args[0], p->args);
+			perror("execvp");
+			_exit(127);
+
+		default :
+			if (waitpid(pid, &status, 0) == -1) {
+				perror("waitpid");
+			}
+			else if (WIFEXITED(status)) {
+				// child finish normally, check the exit code
+				int exit_code = WEXITSTATUS(status);
+				
+				if (exit_code != 0) {
+					fprintf(stderr, "Command failed with exit code: %d", exit_code);
+				}
+			}
+			else if (WIFSIGNALED(status)){
+				// the child crash or was killed
+				int sig = WTERMSIG(status);
+				fprintf(stderr, "Child process terminated by signal: %d\n", sig);
+			}
+	}
+
   	return 1;
 }
-// ===============================================================
 
 
 // ======================= requirement 2.4 =======================
 /**
  * @brief 
  * Use "pipe()" to create a communication bridge between processes
- * Call "spawn_proc()" in order according to the number of cmd_node
+ * Call "launch_cmd()" in order according to the number of cmd_node
  * @param cmd Command structure  
  * @return int
  * Return execution status 
  */
-int fork_cmd_node(struct cmd *cmd) {
+int execute_pipeline(struct cmd *cmd) {
 	return 1;
 }
 

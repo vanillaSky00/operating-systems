@@ -17,3 +17,7 @@ https://news.ycombinator.com/item?id=32525817
 
 
 https://stackoverflow.com/questions/262439/create-a-wrapper-function-for-malloc-and-free-in-c
+
+
+execvp `file` if the file has `/` than thoguht to be absolute, else considered `relative` and would search from current dir
+execvp expects the `argv` array to look like this: ["ls", "-l", NULL]
