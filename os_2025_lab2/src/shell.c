@@ -164,7 +164,7 @@ int setup_redirection(struct cmd_node *p) {
 		close(fd);
 	}
 
-	return 0;
+	return 1;
 }
 
 
@@ -285,7 +285,7 @@ int execute_external(struct cmd_node *p) {
 			}
 	}
 
-  	return 0;
+  	return 1;
 }
 
 
