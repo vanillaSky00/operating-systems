@@ -388,7 +388,6 @@ void shell_loop() {
 		
 		status = shell_execute(cmd);
 
-		free(line);
 		free_cmd(cmd);
 	} while(status);
 }
