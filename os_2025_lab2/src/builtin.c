@@ -70,12 +70,9 @@ int cd(char **args) {
 
 int pwd(char **args) {
 	char cwd[BUF_SIZE];
-    if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        printf("%s\n", cwd);
-    } 
-	else {
-        perror("pwd");
-    }
+    if (getcwd(cwd, sizeof(cwd)) != NULL) printf("%s\n", cwd);
+	else perror("pwd");
+    
     return 0;
 }
 
@@ -91,8 +88,8 @@ int echo(char **args) {
 		if (args[i + 1])
 			printf(" ");
 	}
-	if (newline)
-		printf("\n");
+	
+	if (newline) printf("\n");
 
 	return 0;
 }
