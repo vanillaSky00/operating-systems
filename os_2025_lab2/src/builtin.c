@@ -18,7 +18,7 @@ int help(char **args) {
     	printf("%d: %s\n", i, builtin_str[i]);
   	}
     printf("--------------------------------------------------\n");
-	return 0;
+	return 1;
 }
 
 
@@ -28,7 +28,7 @@ int cd(char **args) {
 	else if (chdir(args[1]) != 0) 
 		perror("cd");
 	
-	return 0;
+	return 1;
 }
 
 
@@ -37,7 +37,7 @@ int pwd(char **args) {
     if (getcwd(cwd, sizeof(cwd)) != NULL) printf("%s\n", cwd);
 	else perror("pwd");
     
-    return 0;
+    return 1;
 }
 
 
@@ -55,7 +55,7 @@ int echo(char **args) {
 	
 	if (newline) printf("\n");
 
-	return 0;
+	return 1;
 }
 
 
@@ -73,7 +73,7 @@ int record(char **args) {
 		for (int i = history_count % MAX_RECORD_NUM; i < history_count % MAX_RECORD_NUM + MAX_RECORD_NUM; ++i)
 			printf("%2d: %s\n", i - history_count % MAX_RECORD_NUM + 1, history[i % MAX_RECORD_NUM]);
 	}
-	return 0;
+	return 1;
 }
 
 

@@ -299,7 +299,7 @@ int execute_external(struct cmd_node *p) {
  */
 int execute_pipeline(struct cmd *cmd) {
 	struct cmd_node *curr = cmd->head;
-	int status = 0;
+	int status = 1;
 
 	int in_fd = STDIN_FILENO; // read end of previous pipe
 	int fd[2];
@@ -367,7 +367,7 @@ int execute_pipeline(struct cmd *cmd) {
 	
 	while (wait(NULL) > 0); // wait all children
 
-	return status;
+	return 1;
 }
 
 
