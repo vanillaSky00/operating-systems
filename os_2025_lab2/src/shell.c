@@ -74,7 +74,7 @@ char *shell_read_line() {
  * @return struct cmd* 
  * Return the parsed cmd structure
  */
-struct cmd *shell_split_line(char *line) {
+struct cmd *shell_parse_line(char *line) {
 	int args_cap = 10;
     struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
 
@@ -375,7 +375,7 @@ void shell_loop() {
 		if (line == NULL)
 			continue;
 
-		struct cmd* cmd = shell_split_line(line);
+		struct cmd* cmd = shell_parse_line(line);
 		
 		status = shell_execute(cmd);
 

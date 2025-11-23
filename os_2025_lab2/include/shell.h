@@ -6,7 +6,7 @@
 // Main Lifecycle Management
 void shell_loop();
 char *shell_read_line();
-struct cmd *shell_split_line(char *);
+struct cmd *shell_parse_line(char *);
 int shell_execute(struct cmd *);
 void shell_cleanup();
 
