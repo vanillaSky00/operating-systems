@@ -11,7 +11,7 @@
 #include "../include/shell.h"
 
 /**
- * @brief Only execute a single command(built-in or external) 
+ * @brief Being an excuting manager, dispatching task to builtin, external, or pipeline
  * 
  * @return int
  * Return the status code
@@ -27,11 +27,10 @@ int shell_execute(struct cmd *cmd) {
 			return execute_builtin_safe(idx, temp);
 		}
 		else {
-			//external command
 			return execute_external(cmd->head);
 		}
 	}
-	// There are multiple commands ( | )
+	// multiple commands ( | )
 	else {
 		return execute_pipeline(cmd);
 	}
@@ -78,22 +77,22 @@ char *shell_read_line() {
 struct cmd *shell_split_line(char *line) {
 	int args_length = 10;
     struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
+
+	new_cmd->pipe_num = 0;
     new_cmd->head = (struct cmd_node *)malloc(sizeof(struct cmd_node));
     new_cmd->head->args = (char **)malloc(args_length * sizeof(char *));
-
 	for (int i = 0; i < args_length; ++i)
 		new_cmd->head->args[i] = NULL;
-    new_cmd->head->length = 0;
+	new_cmd->head->in_file = NULL;
+    new_cmd->head->out_file = NULL;
     new_cmd->head->next = NULL;
-	new_cmd->pipe_num = 0;
+	new_cmd->head->length = 0;
+	new_cmd->head->in = 0;
+	new_cmd->head->out = 1;
 
 	struct cmd_node *temp = new_cmd->head;
-	temp->in_file 	= NULL;
-	temp->out_file 	= NULL;
-	temp->in       	= 0;
-	temp->out 		= 1;
-
     char *token = strtok(line, " ");
+	
     while (token != NULL) {
         if (token[0] == '|') {
             struct cmd_node *new_pipe = (struct cmd_node *)malloc(sizeof(struct cmd_node));
@@ -202,7 +201,10 @@ int execute_builtin(int index, struct cmd_node *cmd) {
 int execute_builtin_safe(int index, struct cmd_node *cmd) {
 	int saved_in = dup(STDIN_FILENO);
 	int saved_out = dup(STDOUT_FILENO);
-	if(saved_in == -1 || saved_out == -1) perror("dup");
+	if(saved_in == -1 || saved_out == -1) {
+		perror("dup");
+		return -1;
+	}
 
 	if (setup_redirection(cmd) == -1) {
 		perror("setup_redirection");
@@ -211,7 +213,7 @@ int execute_builtin_safe(int index, struct cmd_node *cmd) {
 		dup2(saved_out, STDOUT_FILENO);
 		close(saved_in);
 		close(saved_out);
-		return 1;
+		return -1;
 	}
 
 	int status = (*builtin_func[index])(cmd->args);
