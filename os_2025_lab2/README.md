@@ -56,7 +56,7 @@ main:
 
 - `shell.h` (The Controller): Manages the lifecycle, input parsing, and process orchestration.
 
-## 4. Key Insights
+## 4. Key Insights and Implementation Notes
 ### Redirection vs Piping 
 
 | Feature          | Redirection                      | Piping                                 |
@@ -69,7 +69,9 @@ main:
 
 <br>
 
-To Prevent Inheritance: If you have an FD that the child process should not see (e.g., internal shell database connection), you set the Close-on-Exec flag. Code snippet from Gemini 3:
+#### To Prevent Inheritance: <br>
+
+If you have an FD that the child process should not see (e.g., internal shell database connection), you set the Close-on-Exec flag. Code snippet from Gemini 3:
 
 <br>
 
@@ -137,7 +139,12 @@ while (wait(NULL) > 0);
 Setup: Must happen **before** execution logic starts. <br>
 Restore: Must happen **after** execution (crucial for built-ins to avoid permanently silencing the shell).
 
-## 5. Implementation Notes
+
+cd in Child Process	cd runs without error, but the prompt stays in the old directory.	Rule: cd must be a Built-in. If run in a fork(), it changes the child's directory, which evaporates when the child dies.
+
+Buffer vs. Unbuffered Exit	Output looks weird/duplicated after fork.	Rule: Use _exit() in child processes, not exit(). exit() flushes stdio buffers (printing text twice), _exit() ends the kernel process immediately.
+
+
 - Coding Style: C99 style rather than C89 standard (variables declared at top of scope).
 
 - `execvp` Behavior: If filename contains `/`, it treats it as a path (relative or absolute).
