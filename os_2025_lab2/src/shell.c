@@ -177,7 +177,8 @@ int setup_redirection(struct cmd_node *p) {
  * If command is external command return -1 
  */
 int search_builtin(struct cmd_node *cmd) {
-	for (int i = 0; i < num_builtins(); ++i){
+	if (!cmd->args[0]) return -1;
+	for (int i = 0; i < num_builtins(); i++){
 		if (strcmp(cmd->args[0], builtin_str[i]) == 0){
 			return i;
 		}
@@ -195,29 +196,22 @@ int search_builtin(struct cmd_node *cmd) {
  * Return execution result status
  */
 int execute_builtin(int index, struct cmd_node *cmd) {
-	if (index < 0 || index >= num_builtins()) {
-		perror("execute_builtin");
-		return -1;
-	}
-
-	int result = (*builtin_func[index])(cmd->args);
-	return result;
+	return (*builtin_func[index])(cmd->args);
 }
 
 int execute_builtin_safe(int index, struct cmd_node *cmd) {
-	if (cmd == NULL || index < 0 || index >= num_builtins()) {
-		perror("execute_builtin");
-		return -1;
-	}
-
-	//TODO:
 	int saved_in = dup(STDIN_FILENO);
 	int saved_out = dup(STDOUT_FILENO);
 	if(saved_in == -1 || saved_out == -1) perror("dup");
 
 	if (setup_redirection(cmd) == -1) {
 		perror("setup_redirection");
-		// TODO: return -1 and restore
+		// Must not execute the command
+		dup2(saved_in, STDIN_FILENO);
+		dup2(saved_out, STDOUT_FILENO);
+		close(saved_in);
+		close(saved_out);
+		return 1;
 	}
 
 	int status = (*builtin_func[index])(cmd->args);
@@ -225,7 +219,6 @@ int execute_builtin_safe(int index, struct cmd_node *cmd) {
 	// always restore, regardless of whether the command succeeded or failed
 	dup2(saved_in, STDIN_FILENO);
 	dup2(saved_out, STDOUT_FILENO);
-			
 	close(saved_in);
 	close(saved_out);
 
@@ -373,17 +366,14 @@ int execute_pipeline(struct cmd *cmd) {
 void shell_loop() {
 	int status = 1;
 	
-	do {
-		char* line = NULL;
-		struct cmd* cmd = NULL;
-		
+	do {		
 		printf(">>> $ ");
 
-		line = shell_read_line();
+		char* line = shell_read_line();
 		if (line == NULL)
 			continue;
 
-		cmd = shell_split_line(line);
+		struct cmd* cmd = shell_split_line(line);
 		
 		status = shell_execute(cmd);
 
