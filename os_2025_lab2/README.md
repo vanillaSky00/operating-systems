@@ -21,26 +21,18 @@ The core distinction lies in the execution context:
 | **External** | New Process | `fork()` $\to$ Child Process $\to$ `execvp()`. |
 
 ### Execution Flow Diagram
-```mermaid
-graph TD
-    Start[Shell Loop] --> Input[Read & Parse Input]
-    Input --> Check{Is Built-in?}
 
-    %% Built-in Path
-    Check -- Yes --> SaveFD[Save Stdin/Stdout]
-    SaveFD --> Redir1[Setup Redirection]
-    Redir1 --> ExecBi[Execute Function]
-    ExecBi --> RestoreFD[Restore Stdin/Stdout]
-    RestoreFD --> Loop
+<p align="center">
+  <img src="./assets/png/builtin_vs_external.png" width="650">
+</p>
 
-    %% External Path
-    Check -- No --> Fork[Fork Process]
-    Fork -- Parent --> Wait[Wait for Child]
-    Wait --> Loop
-    Fork -- Child --> Redir2[Setup Redirection]
-    Redir2 --> ExecV[execvp]
-    ExecV --> Exit[Exit Child]
-```
+<p align="center">
+  <img src="./assets/png/redirection.png" width="650">
+</p>
+
+<p align="center">
+  <img src="./assets/png/pipe.png" width="650">
+</p>
 
 ## 3. Architecture (MVC Pattern)
 The project structure separates data, logic, and control flow:
