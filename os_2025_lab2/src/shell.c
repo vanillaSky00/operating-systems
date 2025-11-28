@@ -261,7 +261,7 @@ int execute_external(struct cmd_node *p) {
 				int exit_code = WEXITSTATUS(status);
 
 				if (exit_code != 0) {
-					fprintf(stderr, "Command failed with exit code: %d", exit_code);
+					fprintf(stderr, "Command failed with exit code: %d\n", exit_code);
 				}
 			}
 			else if (WIFSIGNALED(status)){
