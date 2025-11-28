@@ -94,7 +94,7 @@ struct cmd *shell_parse_line(char *line) {
 			token = strtok(NULL, " ");
             curr->in_file = token;
         } 
-		else if (strcmp(token, ">")) {
+		else if (strcmp(token, ">") == 0) {
 			token = strtok(NULL, " ");
             curr->out_file = token;
         } 
