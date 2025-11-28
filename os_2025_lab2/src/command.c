@@ -6,8 +6,6 @@
 #include "../include/command.h"
 
 
-// in command.c
-
 void free_cmd(struct cmd *cmd) {
     struct cmd_node *curr = cmd->head;
     struct cmd_node *next;
