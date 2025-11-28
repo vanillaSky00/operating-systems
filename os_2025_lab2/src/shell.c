@@ -76,19 +76,9 @@ char *shell_read_line() {
  */
 struct cmd *shell_parse_line(char *line) {
 	int args_cap = 10;
-    struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
 
-	new_cmd->pipe_num 		= 0;
-    new_cmd->head 			= (struct cmd_node *)malloc(sizeof(struct cmd_node));
-    new_cmd->head->args 	= (char **)malloc(args_cap * sizeof(char *));
-	for (int i = 0; i < args_cap; ++i)
-		new_cmd->head->args[i] = NULL;
-	new_cmd->head->in_file  = NULL;
-    new_cmd->head->out_file = NULL;
-    new_cmd->head->next 	= NULL;
-	new_cmd->head->length   = 0;
-	new_cmd->head->in 		= 0;
-	new_cmd->head->out		= 1;
+    struct cmd *new_cmd = create_cmd();
+    new_cmd->head = create_cmd_node();
 
 	struct cmd_node *temp = new_cmd->head;
     char *token = strtok(line, " ");
