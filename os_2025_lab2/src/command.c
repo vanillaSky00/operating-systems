@@ -25,6 +25,33 @@ void free_cmd(struct cmd *cmd) {
     if (cmd != NULL) free(cmd); 
 }
 
+struct cmd *create_cmd() {
+	struct cmd *new_cmd = (struct cmd *)malloc(sizeof(struct cmd));
+	if (!new_cmd) {
+		perror("malloc in create_cmd");
+		return NULL;
+	} 
+
+	new_cmd->head = NULL;
+	new_cmd->pipe_num = 0;
+	return new_cmd;
+}
+
+struct cmd_node *create_cmd_node(){
+	struct cmd_node *node = (struct cmd_node *)calloc(1, sizeof(struct cmd_node));
+	if (!node) {
+		perror("malloc in crete_cmd_node");
+		return NULL;
+	}
+
+	node->args = (char **) malloc(ARGS_CAP * sizeof(char *));
+	for (int i = 0; i < ARGS_CAP; i++) {
+		node->args[i] = NULL;
+	}
+
+	node->out = 1;
+	return node;
+}
 /**
  * @brief Information used to test the cmd structure
  * 
