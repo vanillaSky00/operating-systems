@@ -44,10 +44,7 @@ struct cmd_node *create_cmd_node(){
 		return NULL;
 	}
 
-	node->args = (char **) malloc(ARGS_CAP * sizeof(char *));
-	for (int i = 0; i < ARGS_CAP; i++) {
-		node->args[i] = NULL;
-	}
+	node->args = (char **) calloc(ARGS_CAP, sizeof(char *));
 
 	node->out = 1;
 	return node;
