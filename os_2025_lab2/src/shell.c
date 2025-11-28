@@ -75,38 +75,29 @@ char *shell_read_line() {
  * Return the parsed cmd structure
  */
 struct cmd *shell_parse_line(char *line) {
-	int args_cap = 10;
 
     struct cmd *new_cmd = create_cmd();
-    new_cmd->head = create_cmd_node();
 
-	struct cmd_node *temp = new_cmd->head;
+    new_cmd->head = create_cmd_node();
+	struct cmd_node *curr = new_cmd->head;
     char *token = strtok(line, " ");
 
     while (token != NULL) {
         if (token[0] == '|') {
-            struct cmd_node *new_pipe = (struct cmd_node *)malloc(sizeof(struct cmd_node));
-			new_pipe->args = (char **)malloc(args_cap * sizeof(char *));
-			for (int i = 0; i < args_cap; ++i)
-				new_pipe->args[i] = NULL;
-			new_pipe->length = 0;
-			new_pipe->next = NULL;
-			new_pipe->in_file = NULL;
-			new_pipe->out_file = NULL;
-			new_pipe->in = 0;
-			new_pipe->out = 1;
-			
-			temp->next = new_pipe;
-			temp = new_pipe;
+            struct cmd_node *new_node = create_cmd_node();
+			curr->next = new_node;
+			curr = new_node;
+
+			new_cmd->pipe_num++;
         } else if (token[0] == '<') {
 			token = strtok(NULL, " ");
-            temp->in_file = token;
+            curr->in_file = token;
         } else if (token[0] == '>') {
 			token = strtok(NULL, " ");
-            temp->out_file = token;
+            curr->out_file = token;
         } else {
-			temp->args[temp->length] = token;
-			temp->length++;
+			curr->args[curr->length] = token;
+			curr->length++;
         }
         token = strtok(NULL, " ");
 		new_cmd->pipe_num++;
