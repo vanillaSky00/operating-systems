@@ -59,7 +59,7 @@ char *shell_read_line() {
 		else {
 			buffer[strcspn(buffer, "\n")] = 0;
 			strncpy(history[history_count % MAX_RECORD_NUM], buffer, BUF_SIZE);
-			++history_count;
+			history_count++;
 		}
 	}
 
@@ -83,24 +83,29 @@ struct cmd *shell_parse_line(char *line) {
     char *token = strtok(line, " ");
 
     while (token != NULL) {
-        if (token[0] == '|') {
+        if (strcmp(token, "|") == 0) {
             struct cmd_node *new_node = create_cmd_node();
 			curr->next = new_node;
 			curr = new_node;
 
 			new_cmd->pipe_num++;
-        } else if (token[0] == '<') {
+        } 
+		else if (strcmp(token, "<") == 0) {
 			token = strtok(NULL, " ");
             curr->in_file = token;
-        } else if (token[0] == '>') {
+        } 
+		else if (strcmp(token, ">")) {
 			token = strtok(NULL, " ");
             curr->out_file = token;
-        } else {
-			curr->args[curr->length] = token;
-			curr->length++;
+        } 
+		else {
+			if (curr->length < ARGS_CAP - 1) {
+				curr->args[curr->length] = token;
+				curr->length++;
+				curr->args[curr->length] = NULL; // defensive, null terminated
+			}
         }
         token = strtok(NULL, " ");
-		new_cmd->pipe_num++;
 
     }
 
