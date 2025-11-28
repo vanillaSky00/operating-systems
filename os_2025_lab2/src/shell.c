@@ -327,7 +327,7 @@ int execute_pipeline(struct cmd *cmd) {
 				// We are already in a child. Just exec.
 					execvp(curr->args[0], curr->args);
 					perror("execvp");
-					exit(127);
+					_exit(127);
 				}
 			exit(-1); // Should not reach here
 		}
