@@ -56,7 +56,7 @@ void *thread1(void *arg){
             }   
 
             pthread_spin_lock(&lock);
-            z[i][j] += local
+            z[i][j] += local;
             pthread_spin_unlock(&lock);   
         }
     }
@@ -71,12 +71,12 @@ void *thread2(void *arg) {
         for(int j=0; j<matrix_col_y; j++){
 
             int local = 0;
-            for(int k=0; k<matrix_row_y/2; k++){
+            for(int k=matrix_row_y/2; k<matrix_row_y; k++){
                 local += x[i][k] * y[k][j];
             }   
             
             pthread_spin_lock(&lock);
-            z[i][j] += local
+            z[i][j] += local;
             pthread_spin_unlock(&lock);   
         }
     }

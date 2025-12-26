@@ -7,25 +7,25 @@
 
 static int a = 0;
 
-/* 4-byte aligned is good practice for exclusive ops */
+// 4-byte aligned is good practice for exclusive ops 
 static volatile int g_lock __attribute__((aligned(4))) = UNLOCK;
 
 static inline void spin_lock(volatile int *lockp) {
     int tmp, st;
 
     __asm__ volatile(
-        "1:\n"
-        "   ldaxr   %w0, [%2]\n"        // tmp = *lockp   (acquire)
-        "   cmp     %w0, %w3\n"         // tmp == UNLOCK ?
-        "   b.eq    2f\n"               // yes -> try to take it
-        "   yield\n"                    // hint to CPU: we're spinning
-        "   b       1b\n"               // keep spinning
+        "1:\n"                                // arm 64 LL/SC pattern
+        "   ldaxr   %w0, [%2]\n"              // tmp = *lockp   (acquire)
+        "   cmp     %w0, %w3\n"               // tmp == UNLOCK ?
+        "   b.eq    2f\n"                     // yes -> try to take it
+        "   yield\n"                          // hint to CPU: we're spinning
+        "   b       1b\n"                     // keep spinning
 
         "2:\n"
-        "   mov     %w0, %w4\n"         // tmp = LOCK (0)
-        "   stxr    %w1, %w0, [%2]\n"   // st = store-exclusive(lock=0)
-        "   cbnz    %w1, 1b\n"          // if failed, retry
-        : "=&r"(tmp), "=&r"(st)         // %0, %1 outputs
+        "   mov     %w0, %w4\n"               // tmp = LOCK (0)
+        "   stxr    %w1, %w0, [%2]\n"         // st = store-exclusive(lock=0)
+        "   cbnz    %w1, 1b\n"                // if failed, retry
+        : "=&r"(tmp), "=&r"(st)               // %0, %1 outputs
         : "r"(lockp), "r"(UNLOCK), "r"(LOCK)  // %2, %3, %4 inputs
         : "cc", "memory"
     );
@@ -33,7 +33,7 @@ static inline void spin_lock(volatile int *lockp) {
 
 static inline void spin_unlock(volatile int *lockp) {
     __asm__ volatile(
-        "stlr %w1, [%0]\n"              // *lockp = UNLOCK (release)
+        "stlr %w1, [%0]\n"                    // lockp = UNLOCK (release)
         :
         : "r"(lockp), "r"(UNLOCK)
         : "memory"
