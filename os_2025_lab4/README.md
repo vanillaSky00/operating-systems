@@ -68,6 +68,13 @@ struct dir_context {
 ```
 
 
+update note:
+Old (Buggy): i_blocks_array[0] = 0; (This pointed to Root's data).
+
+New (Fixed): i_blocks_array[0] = OSFS_INVALID_BLOCK; (This points to "nothing", waiting for write to allocate a fresh block).
+
+
+## Test 
 Compile and load module
 ```
 make
@@ -100,3 +107,7 @@ sudo umount mnt
 ```
 make clean
 ```
+
+
+reference
+https://hackmd.io/@sysprog/linux-file-system

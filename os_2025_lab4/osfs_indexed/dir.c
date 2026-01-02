@@ -194,7 +194,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     osfs_inode->i_blocks = 0;
 
     /* Update superblock information */
-    sb_info->nr_free_inodes--;
+    //sb_info->nr_free_inodes--; // already -- in ino = osfs_get_free_inode(sb_info);
 
     /* Mark inode as dirty */
     mark_inode_dirty(inode);
@@ -238,7 +238,9 @@ static int osfs_add_dir_entry(struct inode *dir, uint32_t inode_no, const char *
     dir_entries[dir_entry_count].inode_no = inode_no;
 
     // Update the size of the parent directory
-    parent_inode->i_size += sizeof(struct osfs_dir_entry);
+    parent_inode->i_size += sizeof(struct osfs_dir_entry); 
+    dir->i_size = parent_inode->i_size; // updat the dir size in vfs inode
+    mark_inode_dirty(dir);
 
     return 0;
 }

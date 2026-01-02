@@ -110,7 +110,13 @@ int osfs_fill_super(struct super_block *sb, void *data, int silent)
 
     // --- FIX STARTS HERE ---
     root_osfs_inode->i_blocks = 1;      // <--- ADD THIS: Root dir has 1 block
-    root_osfs_inode->i_block = 0;       // <--- ADD THIS: It uses Block 0
+    
+    for (int k = 0; k < MAX_DIRECT_BLOCKS; k++) {
+        root_osfs_inode->i_blocks_array[k] = OSFS_INVALID_BLOCK;
+    }
+
+    // Set the first block to Block 0 (Reserved for Root)
+    root_osfs_inode->i_blocks_array[0] = 0;
     // -----------------------
 
 

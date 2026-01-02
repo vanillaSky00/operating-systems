@@ -39,6 +39,10 @@ static ssize_t osfs_read(struct file *filp, char __user *buf, size_t len, loff_t
     if (block_idx >= MAX_DIRECT_BLOCKS || osfs_inode->i_blocks_array[block_idx] == OSFS_INVALID_BLOCK)
         return 0; // Should not happen if ppos < i_size, but safe to check
 
+    // Ensure we don't read past the end of the current block 
+    if (block_offset + len > sb_info->block_size) 
+        len = sb_info->block_size - block_offset;
+
     // Calculate physical address
     data_block = sb_info->data_blocks + 
                  (osfs_inode->i_blocks_array[block_idx] * sb_info->block_size) + 
@@ -94,7 +98,7 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
         ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[block_idx]);
         if (ret) {
             pr_err("osfs_write: Failed to allocate data block at index %u\n", block_idx);
-            return -ENOSPC;
+            return ret;
         }
         osfs_inode->i_blocks++;
         mark_inode_dirty(inode);

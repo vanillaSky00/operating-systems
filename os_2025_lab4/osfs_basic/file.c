@@ -75,7 +75,7 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
         ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
         if (ret) {
             pr_err("osfs_write: Failed to allocate data block\n");
-            return -ENOSPC;
+            return ret;
         }
         osfs_inode->i_blocks = 1;
     }
