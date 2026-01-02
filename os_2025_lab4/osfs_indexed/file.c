@@ -41,7 +41,7 @@ static ssize_t osfs_read(struct file *filp, char __user *buf, size_t len, loff_t
 
     // Calculate physical address
     data_block = sb_info->data_blocks + 
-                 (osfs_inode->i_block_array[block_idx] * sb_info->block_size) + 
+                 (osfs_inode->i_blocks_array[block_idx] * sb_info->block_size) + 
                  block_offset;
     // ------------------------------------------------------------------------
 
@@ -87,9 +87,9 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
 
     // Cannot write beyond data blocks array
     if (block_idx >= MAX_DIRECT_BLOCKS) 
-        return -EFBIG
+        return -EFBIG;
 
-    // Check if this specific block is allocatied. 
+    // Check if this specific block is allocatied. data_block
     if (osfs_inode->i_blocks_array[block_idx] == OSFS_INVALID_BLOCK) {
         ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[block_idx]);
         if (ret) {
