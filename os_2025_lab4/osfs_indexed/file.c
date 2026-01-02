@@ -85,7 +85,7 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
         return -EFBIG;
     
     if (*ppos + len > sb_info->block_size)
-        len = sb_info->block_sizee - *ppos;
+        len = sb_info->block_size - *ppos;
         
     // Step4: Write data from user space to the data block
     data_block = (char *)sb_info->data_blocks + (osfs_inode->i_block * sb_info->block_size) + *ppos;
