@@ -183,12 +183,22 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     inode->i_private = osfs_inode;
 
     /* Allocate data block */
-    ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
-    if (ret) {
-        pr_err("osfs_new_inode: Failed to allocate data block\n");
-        iput(inode);
-        return ERR_PTR(ret);
-    }
+    // cause disk leak if encountering an empty file
+    // ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
+    // if (ret) {
+    //     pr_err("osfs_new_inode: Failed to allocate data block\n");
+    //     iput(inode);
+    //     return ERR_PTR(ret);
+    // }
+
+    /* REPLACED SECTION: Use Lazy Allocation (Your Comments) */
+    // It does not allocate a data block immediately.
+    // It should just initialize the inode to have 0 blocks.
+    // It can handle if the current file is empty it does not need a block.
+    // When we actually write the data, osfs_write will detect this and
+    // then allocate a new block for it.
+    osfs_inode->i_block = 0;
+    osfs_inode->i_blocks = 0;
 
     /* Update superblock information */
     sb_info->nr_free_inodes--;
@@ -266,12 +276,18 @@ static int osfs_create(struct mnt_idmap *idmap, struct inode *dir, struct dentry
     int ret;
 
 
+    // Step 2: Validate the existence and file name length
+    // d_really_is_positive checks if the dentry maps to an existing inode
+    if (d_really_is_positive(dentry)) 
+        return -EEXIST;
 
-    // Step2: Validate the file name length
-    
+    if (dentry->d_name.len > MAX_FILENAME_LEN) 
+        return -ENAMETOOLONG;
 
     // Step3: Allocate and initialize VFS & osfs inode
-    
+    inode = osfs_new_inode(dir, mode);
+    if (IS_ERR(inode))
+        return PTR_ERR(inode);
 
     osfs_inode = inode->i_private;
     if (!osfs_inode) {
@@ -279,23 +295,30 @@ static int osfs_create(struct mnt_idmap *idmap, struct inode *dir, struct dentry
         iput(inode);
         return -EIO;
     }
+
     // init osfs_inode attribute
     osfs_inode->i_block = 0; 
     osfs_inode->i_size = 0;
     osfs_inode->i_blocks = 0;
 
     // Step4: Parent directory entry update for the new file
-
+    ret = osfs_add_dir_entry(dir, 
+                             inode->i_ino, 
+                             dentry->d_name.name, 
+                             dentry->d_name.len);
     if (ret) {
         pr_err("osfs_create: Failed to add directory entry\n");
         iput(inode);
-        return ret;
+        return ret; // could be -ENOSPC 
     }
 
     // Step 5: Update the parent directory's metadata 
-    
+    inode_set_mtime_to_ts(dir, current_time(dir));
+    inode_set_ctime_to_ts(dir, current_time(dir));
+    mark_inode_dirty(dir);
     
     // Step 6: Bind the inode to the VFS dentry
+    d_instantiate(dentry, inode);
 
     pr_info("osfs_create: File '%.*s' created with inode %lu\n",
             (int)dentry->d_name.len, dentry->d_name.name, inode->i_ino);
