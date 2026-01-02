@@ -1,15 +1,8 @@
-
-| Feature             | osfs_basic (Standard)                   | osfs_indexed (Bonus)                                        |
-| ------------------- | --------------------------------------- | ----------------------------------------------------------- |
-| Inode Structure     | `uint32_t i_block;`                     | `uint32_t i_blocks_array[16];`                              |
-| Max File Size       | 4 KB                                    | 64 KB (16 × 4 KB)                                           |
-| Allocation Strategy | Single Block Allocation                 | Direct Indexed Allocation                                   |
-| Complexity          | Simple, no loops needed for read/write. | Needs math (`ppos / BLOCK_SIZE`) to find the correct index. |
-
-
 superblock
 inode
 dentry
+
+
 
 Think of `VFS` as a massive Mall, and our file system `osfs` as a new store we are trying to open. And `linux/fs.h` serves as a Rulebook for this Mall.
 `<linux/fs.h>`
