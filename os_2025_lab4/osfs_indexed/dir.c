@@ -28,7 +28,7 @@ static struct dentry *osfs_lookup(struct inode *dir, struct dentry *dentry, unsi
             (int)dentry->d_name.len, dentry->d_name.name, dir->i_ino);
 
     // Read the parent directory's data block
-    dir_data_block = sb_info->data_blocks + parent_inode->i_block * BLOCK_SIZE;
+    dir_data_block = sb_info->data_blocks + parent_inode->i_blocks_array[0] * BLOCK_SIZE;
 
     // Calculate the number of directory entries
     dir_entry_count = parent_inode->i_size / sizeof(struct osfs_dir_entry);
@@ -76,7 +76,7 @@ static int osfs_iterate(struct file *filp, struct dir_context *ctx)
             return 0;
     }
 
-    dir_data_block = sb_info->data_blocks + osfs_inode->i_block * BLOCK_SIZE;
+    dir_data_block = sb_info->data_blocks + osfs_inode->i_blocks_array[0] * BLOCK_SIZE;
     dir_entry_count = osfs_inode->i_size / sizeof(struct osfs_dir_entry);
     dir_entries = (struct osfs_dir_entry *)dir_data_block;
 
@@ -182,7 +182,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     // --------hanlde how many blocks it actually used--------
     osfs_inode->i_blocks = 0;
 
-    for (int k =0; i < MAX_DIRECT_BLOCKS; k++) {
+    for (int k =0; k < MAX_DIRECT_BLOCKS; k++) {
         osfs_inode->i_blocks_array[k] = OSFS_INVALID_BLOCK;
     }
     // --------------------------------------------------------
@@ -192,7 +192,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
 
     /* Allocate data block */
     // cause disk leak if encountering an empty file
-    // ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
+    // ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[0]);
     // if (ret) {
     //     pr_err("osfs_new_inode: Failed to allocate data block\n");
     //     iput(inode);
@@ -205,7 +205,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     // It can handle if the current file is empty it does not need a block.
     // When we actually write the data, osfs_write will detect this and
     // then allocate a new block for it.
-    osfs_inode->i_block = 0;
+    osfs_inode->i_blocks_array[0] = OSFS_INVALID_BLOCK;
     osfs_inode->i_blocks = 0;
 
     /* Update superblock information */
@@ -227,7 +227,7 @@ static int osfs_add_dir_entry(struct inode *dir, uint32_t inode_no, const char *
     int i;
 
     // Read the parent directory's data block
-    dir_data_block = sb_info->data_blocks + parent_inode->i_block * BLOCK_SIZE;
+    dir_data_block = sb_info->data_blocks + parent_inode->i_blocks_array[0] * BLOCK_SIZE;
 
     // Calculate the existing number of directory entries
     dir_entry_count = parent_inode->i_size / sizeof(struct osfs_dir_entry);
@@ -305,7 +305,7 @@ static int osfs_create(struct mnt_idmap *idmap, struct inode *dir, struct dentry
     }
 
     // init osfs_inode attribute
-    osfs_inode->i_block = 0; 
+    osfs_inode->i_blocks_array[0] = OSFS_INVALID_BLOCK; 
     osfs_inode->i_size = 0;
     osfs_inode->i_blocks = 0;
 
