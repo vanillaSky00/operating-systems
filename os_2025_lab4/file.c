@@ -33,7 +33,7 @@ static ssize_t osfs_read(struct file *filp, char __user *buf, size_t len, loff_t
     if (*ppos + len > osfs_inode->i_size)
         len = osfs_inode->i_size - *ppos;
 
-    data_block = sb_info->data_blocks + osfs_inode->i_block * BLOCK_SIZE + *ppos;
+    data_block = sb_info->data_blocks + osfs_inode->i_block * sb_info->block_size + *ppos;
     if (copy_to_user(buf, data_block, len))
         return -EFAULT;
 
@@ -61,26 +61,51 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
 {   
     //Step1: Retrieve the inode and filesystem information
     struct inode *inode = file_inode(filp);
-    struct osfs_inode *osfs_inode = inode->i_private;
+    struct osfs_inode *osfs_inode = inode->i_private; // inode->i_private is a pointer we own, to store our filesystem-specific inode
     struct osfs_sb_info *sb_info = inode->i_sb->s_fs_info;
     void *data_block;
     ssize_t bytes_written;
     int ret;
 
-    // Step2: Check if a data block has been allocated; if not, allocate one
+    if (!osfs_inode || !sb_info) 
+        return -EIO;
 
+    // Step2: Check if a data block has been allocated; if not, allocate one
+    if (osfs_inode->i_blocks == 0) {
+        ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
+        if (ret) {
+            pr_err("osfs_write: Failed to allocate data block\n");
+            return -ENOSPC;
+        }
+        osfs_inode->i_blocks = 1;
+    }
 
     // Step3: Limit the write length to fit within one data block
-
-
+    if (*ppos >= sb_info->block_size) 
+        return -EFBIG;
+    
+    if (*ppos + len > sb_info->block_size)
+        len = sb_info->block_sizeE - *ppos;
+        
     // Step4: Write data from user space to the data block
+    data_block = (char *)sb_info->data_blocks + (osfs_inode->i_block * sb_info->block_size) + *ppos;
 
+    if (copy_from_user(data_block, buf, len)) 
+        return -EFAULT;
 
     // Step5: Update inode & osfs_inode attribute
+    *ppos += len;
+    bytes_written = len;
 
+    if (*ppos > osfs_inode->size) {
+        osfs_inode->i_size = *ppos;
+        inode->i_size = *ppos;
+    }
 
     // Step6: Return the number of bytes written
-
+    inode_set_mtime_to_ts(inode, current_time(inode));
+    inode_set_ctime_to_ts(inode, current_time(inode));
+    mark_inode_dirty(inode);
     
     return bytes_written;
 }
