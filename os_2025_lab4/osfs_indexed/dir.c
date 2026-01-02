@@ -190,22 +190,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     osfs_inode->__i_atime = osfs_inode->__i_mtime = osfs_inode->__i_ctime = current_time(inode);
     inode->i_private = osfs_inode;
 
-    /* Allocate data block */
-    // cause disk leak if encountering an empty file
-    // ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[0]);
-    // if (ret) {
-    //     pr_err("osfs_new_inode: Failed to allocate data block\n");
-    //     iput(inode);
-    //     return ERR_PTR(ret);
-    // }
-
-    /* REPLACED SECTION: Use Lazy Allocation (Your Comments) */
-    // It does not allocate a data block immediately.
-    // It should just initialize the inode to have 0 blocks.
-    // It can handle if the current file is empty it does not need a block.
-    // When we actually write the data, osfs_write will detect this and
-    // then allocate a new block for it.
-    osfs_inode->i_blocks_array[0] = OSFS_INVALID_BLOCK;
+    // Use Lazy Allocation 
     osfs_inode->i_blocks = 0;
 
     /* Update superblock information */
