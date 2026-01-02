@@ -66,3 +66,37 @@ struct dir_context {
     // actor: Function pointer used to emit entries (dir_emit)
 };
 ```
+
+
+Compile and load module
+```
+make
+sudo rmmod osfs.ko
+sudo insmod osfs.ko
+sudo dmesg | tail
+```
+
+Mount our fs to `mnt/`
+```
+sudo mount -t osfs none mnt/
+sudo dmesg | tail
+```
+
+```
+sudo touch mnt/test1.txt
+sudo touch test1.txt
+ls -l mnt/
+```
+
+```
+sudo bash –c "echo 'I LOVE OSLAB' > test1.txt"
+cat test1.txt
+```
+
+clean up
+```
+sudo umount mnt
+```
+```
+make clean
+```
