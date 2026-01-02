@@ -81,7 +81,8 @@ struct inode *osfs_iget(struct super_block *sb, unsigned long ino)
     inode_set_mtime_to_ts(inode, osfs_inode->__i_mtime);
     inode_set_ctime_to_ts(inode, osfs_inode->__i_ctime);
     inode->i_size = osfs_inode->i_size;
-    inode->i_blocks = osfs_inode->i_blocks;
+    //inode->i_blocks = osfs_inode->i_blocks;
+    inode->i_blocks = osfs_inode->i_blocks * (BLOCK_SIZE / 512);
     inode->i_private = osfs_inode;
 
     if (S_ISDIR(inode->i_mode)) {

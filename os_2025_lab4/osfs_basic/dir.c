@@ -178,7 +178,7 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     osfs_inode->i_uid = i_uid_read(inode);
     osfs_inode->i_gid = i_gid_read(inode);
     osfs_inode->i_size = inode->i_size;
-    osfs_inode->i_blocks = 1; // Simplified handling
+    //osfs_inode->i_blocks = 1; // Simplified handling
     osfs_inode->__i_atime = osfs_inode->__i_mtime = osfs_inode->__i_ctime = current_time(inode);
     inode->i_private = osfs_inode;
 
@@ -197,8 +197,23 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     // It can handle if the current file is empty it does not need a block.
     // When we actually write the data, osfs_write will detect this and
     // then allocate a new block for it.
-    osfs_inode->i_block = 0;
-    osfs_inode->i_blocks = 0;
+    if (S_ISDIR(mode)) {
+        // [Safety Fix] Directories need a block immediately. 
+        // Otherwise, they point to Block 0 (Root) and ls will show garbage.
+        ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
+        if (ret) {
+            iput(inode);
+            return ERR_PTR(ret);
+        }
+        osfs_inode->i_blocks = 1;
+        inode->i_blocks = 1 * (BLOCK_SIZE / 512); // Sync VFS blocks
+    } 
+    else {
+        // [Lazy Allocation] Regular files wait until the first write.
+        osfs_inode->i_block = 0;
+        osfs_inode->i_blocks = 0;
+        // Note: osfs_read/write MUST check (i_blocks == 0) to avoid reading Block 0.
+    }
 
     /* Update superblock information */
     //sb_info->nr_free_inodes--; // already -- in ino = osfs_get_free_inode(sb_info);
@@ -248,7 +263,7 @@ static int osfs_add_dir_entry(struct inode *dir, uint32_t inode_no, const char *
     parent_inode->i_size += sizeof(struct osfs_dir_entry);
     dir->i_size = parent_inode->i_size; // updat the dir size in vfs inode
     mark_inode_dirty(dir);
-    
+
     return 0;
 }
 

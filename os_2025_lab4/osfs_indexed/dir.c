@@ -158,7 +158,6 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
         set_nlink(inode, 1);
         inode->i_size = 0;
     } else if (S_ISLNK(mode)) {
-        // inode->i_op = &osfs_symlink_inode_operations;
         set_nlink(inode, 1);
         inode->i_size = 0;
     }
@@ -179,22 +178,29 @@ struct inode *osfs_new_inode(const struct inode *dir, umode_t mode)
     osfs_inode->i_gid = i_gid_read(inode);
     osfs_inode->i_size = inode->i_size;
 
-    // --------hanlde how many blocks it actually used--------
-    osfs_inode->i_blocks = 0;
-
+    // --- FIX: Initialize array FIRST ---
     for (int k =0; k < MAX_DIRECT_BLOCKS; k++) {
         osfs_inode->i_blocks_array[k] = OSFS_INVALID_BLOCK;
     }
-    // --------------------------------------------------------
+    osfs_inode->i_blocks = 0;
+    // -----------------------------------
+
+    // --- THEN Allocate if it is a DIRECTORY ---
+    if (S_ISDIR(mode)) {
+        ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[0]);
+        if (ret) {
+            iput(inode);
+            return ERR_PTR(ret);
+        }
+        osfs_inode->i_blocks = 1;
+        
+        // Optional: Sync VFS inode blocks (sectors)
+        // inode->i_blocks = 1 * (BLOCK_SIZE / 512); 
+    }
+    // ------------------------------------------
 
     osfs_inode->__i_atime = osfs_inode->__i_mtime = osfs_inode->__i_ctime = current_time(inode);
     inode->i_private = osfs_inode;
-
-    // Use Lazy Allocation 
-    osfs_inode->i_blocks = 0;
-
-    /* Update superblock information */
-    //sb_info->nr_free_inodes--; // already -- in ino = osfs_get_free_inode(sb_info);
 
     /* Mark inode as dirty */
     mark_inode_dirty(inode);
