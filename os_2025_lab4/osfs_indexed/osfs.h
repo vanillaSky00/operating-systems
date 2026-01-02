@@ -19,6 +19,12 @@
 
 #define BITMAP_SIZE(bits) (((bits) + BITS_PER_LONG - 1) / BITS_PER_LONG)
 
+// --- FOR DIRECT INDEXED ---
+#define MAX_DIRECT_BLOCKS 16
+#define OSFS_INVALID_BLOCK ((uint32_t)~0) // Represents "No block allocated"
+// --------------------------
+
+
 // Calculate the size of the bitmap (in units of unsigned long)
 #define INODE_BITMAP_SIZE BITMAP_SIZE(INODE_COUNT)
 #define BLOCK_BITMAP_SIZE BITMAP_SIZE(DATA_BLOCK_COUNT)
@@ -58,7 +64,7 @@ struct osfs_dir_entry {
 struct osfs_inode {
     uint32_t i_ino;                     // Inode number
     uint32_t i_size;                    // File size in bytes
-    uint32_t i_blocks;                  // Number of blocks occupied by the file
+    uint32_t i_blocks;                  // Count of total blocks used
     uint16_t i_mode;                    // File mode (permissions and type)
     uint16_t i_links_count;             // Number of hard links
     uint32_t i_uid;                     // User ID of owner
@@ -66,7 +72,8 @@ struct osfs_inode {
     struct timespec64 __i_atime;        // Last access time
     struct timespec64 __i_mtime;        // Last modification time
     struct timespec64 __i_ctime;        // Creation time
-    uint32_t i_block;                   // Simplified handling, single data block pointer = data block number (index)
+    //uint32_t i_block;                   // Simplified handling, single data block pointer = data block number (index)
+    uint32_t i_blocks_array[MAX_DIRECT_BLOCKS]; // Direct pointers to data blocks
 };  // single-block files: each file points to one data block via i_block.
 
 struct inode *osfs_iget(struct super_block *sb, unsigned long ino);

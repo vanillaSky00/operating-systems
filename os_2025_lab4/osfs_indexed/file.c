@@ -33,7 +33,18 @@ static ssize_t osfs_read(struct file *filp, char __user *buf, size_t len, loff_t
     if (*ppos + len > osfs_inode->i_size)
         len = osfs_inode->i_size - *ppos;
 
-    data_block = sb_info->data_blocks + osfs_inode->i_block * sb_info->block_size + *ppos;
+    // Upadte: Check if the block index is valid and allocated ----------------
+    uint32_t block_idx = *ppos / sb_info->block_size;
+    uint32_t block_offset = *ppos % sb_info->block_size;
+    if (block_idx >= MAX_DIRECT_BLOCKS || osfs_inode->i_blocks_array[block_idx] == OSFS_INVALID_BLOCK)
+        return 0; // Should not happen if ppos < i_size, but safe to check
+
+    // Calculate physical address
+    data_block = sb_info->data_blocks + 
+                 (osfs_inode->i_block_array[block_idx] * sb_info->block_size) + 
+                 block_offset;
+    // ------------------------------------------------------------------------
+
     if (copy_to_user(buf, data_block, len))
         return -EFAULT;
 
@@ -59,9 +70,9 @@ static ssize_t osfs_read(struct file *filp, char __user *buf, size_t len, loff_t
  */
 static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len, loff_t *ppos)
 {   
-    //Step1: Retrieve the inode and filesystem information
+
     struct inode *inode = file_inode(filp);
-    struct osfs_inode *osfs_inode = inode->i_private; // inode->i_private is a pointer we own, to store our filesystem-specific inode
+    struct osfs_inode *osfs_inode = inode->i_private;
     struct osfs_sb_info *sb_info = inode->i_sb->s_fs_info;
     void *data_block;
     ssize_t bytes_written;
@@ -70,25 +81,35 @@ static ssize_t osfs_write(struct file *filp, const char __user *buf, size_t len,
     if (!osfs_inode || !sb_info) 
         return -EIO;
 
-    // Step2: Check if a data block has been allocated; if not, allocate one
-    if (osfs_inode->i_blocks == 0) {
-        ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_block);
+    // Upadte: // 1. Calculate which block index we need ----------------
+    uint32_t block_idx = *ppos / sb_info->block_size;
+    uint32_t block_offset = *ppos % sb_info->block_size;
+
+    // Cannot write beyond data blocks array
+    if (block_idx >= MAX_DIRECT_BLOCKS) 
+        return -EFBIG
+
+    // Check if this specific block is allocatied. 
+    if (osfs_inode->i_blocks_array[block_idx] == OSFS_INVALID_BLOCK) {
+        ret = osfs_alloc_data_block(sb_info, &osfs_inode->i_blocks_array[block_idx]);
         if (ret) {
-            pr_err("osfs_write: Failed to allocate data block\n");
+            pr_err("osfs_write: Failed to allocate data block at index %u\n", block_idx);
             return -ENOSPC;
         }
-        osfs_inode->i_blocks = 1;
+        osfs_inode->i_blocks++;
+        mark_inode_dirty(inode);
     }
-
-    // Step3: Limit the write length to fit within one data block
-    if (*ppos >= sb_info->block_size) 
-        return -EFBIG;
     
-    if (*ppos + len > sb_info->block_size)
-        len = sb_info->block_size - *ppos;
+    if (block_offset + len > sb_info->block_size)
+        len = sb_info->block_size - block_offset;
         
     // Step4: Write data from user space to the data block
-    data_block = (char *)sb_info->data_blocks + (osfs_inode->i_block * sb_info->block_size) + *ppos;
+    data_block = (char *)sb_info->data_blocks + 
+                 (osfs_inode->i_blocks_array[block_idx] * sb_info->block_size) + 
+                 block_offset;
+
+    // --- UPDATE END -------------------------------------
+
 
     if (copy_from_user(data_block, buf, len)) 
         return -EFAULT;
